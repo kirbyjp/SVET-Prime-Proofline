@@ -1,6 +1,6 @@
 ---
 title: "SVET‑Prime‑Proofline"
-subtitle: "A mathematical proofline engine for deriving the asymptotic structure of the work function \(W(n)\)"
+subtitle: 'A mathematical proofline engine for deriving the asymptotic structure of the work function \(W(n)\)'
 author:
   - John Kirby
 date: "September 2026"

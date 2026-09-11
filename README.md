@@ -26,18 +26,18 @@ header-includes:
 ---
 ## Preface: Why This Derivation Exists
 
-SVET-Prime-Proofline exists to formalize the analytic backbone behind the work function $W(n)$.  
-The SVET Prime interrogation engine revealed a stable harmonic baseline, a linear correction term, and a structured residual field that consistently aligned with classical divisor-sum behavior.  
+SVET‑Prime‑Proofline exists to formalize the analytic backbone behind the work function $W(n)$.  
+The SVET Prime interrogation engine revealed a stable harmonic baseline, a linear correction term, and a structured residual field that consistently aligned with classical divisor‑sum behavior.
 
 This document captures the *analytic reason* those empirical structures appear.  
 No telemetry, CSVs, or runtime data are required for this step.  
-The decomposition of $W(n)$ follows directly from its definition and exposes the exact harmonic, linear, and fractional-part components that the engine was detecting numerically.
+The decomposition of $W(n)$ follows directly from its definition and exposes the exact harmonic, linear, and fractional‑part components that the engine was detecting numerically.
 
 This section is the mathematical bridge between:
 - the SVET Prime experimental baselines, and  
 - the formal analytic structure needed for a proofline.
 
-It is the first "pen-to-paper" step in converting the engine's behavior into a rigorous asymptotic framework.
+It is the first “pen‑to‑paper” step in converting the engine’s behavior into a rigorous asymptotic framework.
 
 ---
 
@@ -46,7 +46,7 @@ It is the first "pen-to-paper" step in converting the engine's behavior into a r
 We begin from the operational definition used in the SVET Prime interrogation engine:
 
 $$
-W(n) = \sum_{d=2}^{n-1} \left( 1 + \left\lfloor \frac{n}{d} \right\rfloor \right).
+W(n) = \sum_{d=2}^{n-1} \big( 1 + \lfloor n/d \rfloor \big)
 $$
 
 ### Splitting the Summation
@@ -54,7 +54,7 @@ $$
 Using the identity $\lfloor x \rfloor = x - \{x\}$, where $\{x\}$ is the fractional part, we obtain:
 
 $$
-W(n) = \sum_{d=2}^{n-1} 1 + \sum_{d=2}^{n-1} \left( \frac{n}{d} - \left\{ \frac{n}{d} \right\} \right).
+W(n) = \sum_{d=2}^{n-1} 1 + \sum_{d=2}^{n-1} \big( n/d - \{n/d\} \big)
 $$
 
 ### Constant Term
@@ -62,7 +62,7 @@ $$
 Counting the terms from $d = 2$ to $n-1$:
 
 $$
-\sum_{d=2}^{n-1} 1 = n - 2.
+\sum_{d=2}^{n-1} 1 = n - 2
 $$
 
 ### Harmonic Term
@@ -70,37 +70,39 @@ $$
 Factor out $n$ and apply the asymptotic expansion of the harmonic series:
 
 $$
-n \sum_{d=2}^{n-1} \frac{1}{d} = n \left( \ln n + \gamma - 1 + O\left(\frac{1}{n}\right) \right) = n \ln n + (\gamma - 1)n + O(1),
+n \sum_{d=2}^{n-1} \frac{1}{d}
+  = n (\ln n + \gamma - 1 + O(1/n))
+  = n \ln n + (\gamma - 1)n + O(1)
 $$
 
 where $\gamma$ is the Euler–Mascheroni constant.
 
 ### Grouping Main Terms
 
-Combine the constant and harmonic contributions into a single continuous block:
+Combine the constant and harmonic contributions:
 
 $$
-W(n) = (n - 2) + n \ln n + (\gamma - 1)n + O(1) - \sum_{d=2}^{n-1} \left\{ \frac{n}{d} \right\}.
+W(n) = (n - 2) + n \ln n + (\gamma - 1)n + O(1) - \sum_{d=2}^{n-1} \{n/d\}
 $$
 
 Simplifying the linear terms ($n + (\gamma - 1)n = \gamma n$) and absorbing constants into the error term:
 
 $$
-W(n) = n\ln n + \gamma n + \Delta_W(n),
+W(n) = n \ln n + \gamma n + \Delta_W(n)
 $$
 
 where the residual error term is defined as:
 
 $$
-\Delta_W(n) = -\sum_{d=2}^{n-1} \left\{ \frac{n}{d} \right\} + O(1).
+\Delta_W(n) = -\sum_{d=2}^{n-1} \{n/d\} + O(1)
 $$
 
 ### Analytical Summary
 
-This establishes the direct connection between the empirical SVET Prime baseline coefficients and classical divisor-sum theory:
+This establishes the direct connection between the empirical SVET Prime baseline coefficients and classical divisor‑sum theory:
 
-- **Logarithmic coefficient**: $A = 1$  
-- **Linear coefficient**: $B = \gamma \approx 0.5772$  
-- **Residual structure**: fractional-part Dirichlet error field representing divisor-density interference
+- **[logarithmic coefficient](ca://s?q=Explain_the_logarithmic_coefficient_A)**: $A = 1$  
+- **[linear coefficient](ca://s?q=Explain_the_linear_coefficient_B)**: $B = \gamma \approx 0.5772$  
+- **[residual structure](ca://s?q=Explain_the_fractional_part_residual_term)**: fractional‑part Dirichlet error field representing divisor‑density interference
 
-This completes the first analytic step of the proofline: the closed-form decomposition of $W(n)$ and its link to divisor theory.
+This completes the first analytic step of the proofline: the closed‑form decomposition of $W(n)$ and its link to divisor theory.

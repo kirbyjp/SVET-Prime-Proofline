@@ -101,8 +101,9 @@ $$
 
 This establishes the direct connection between the empirical SVET Prime baseline coefficients and classical divisor‑sum theory:
 
-- **[logarithmic coefficient](ca://s?q=Explain_the_logarithmic_coefficient_A)**: $A = 1$  
-- **[linear coefficient](ca://s?q=Explain_the_linear_coefficient_B)**: $B = \gamma \approx 0.5772$  
-- **[residual structure](ca://s?q=Explain_the_fractional_part_residual_term)**: fractional‑part Dirichlet error field representing divisor‑density interference
+- **Logarithmic coefficient**: $A = 1$  
+- **Linear coefficient**: $B = \gamma \approx 0.5772$  
+- **Residual structure**: fractional‑part Dirichlet error field representing divisor‑density interference
 
 This completes the first analytic step of the proofline: the closed‑form decomposition of $W(n)$ and its link to divisor theory.
+

@@ -26,18 +26,18 @@ header-includes:
 ---
 ## Preface: Why This Derivation Exists
 
-SVET-Prime-Proofline exists to formalize the analytic backbone behind the work function $W(n)$.  
-The SVET Prime interrogation engine revealed a stable harmonic baseline, a linear correction term, and a structured residual field that consistently aligned with classical divisor-sum behavior.  
+SVET‑Prime‑Proofline exists to formalize the analytic backbone behind the work function $W(n)$.  
+The SVET Prime interrogation engine revealed a stable harmonic baseline, a linear correction term, and a structured residual field that consistently aligned with classical divisor‑sum behavior.
 
 This document captures the *analytic reason* those empirical structures appear.  
 No telemetry, CSVs, or runtime data are required for this step.  
-The decomposition of $W(n)$ follows directly from its definition and exposes the exact harmonic, linear, and fractional-part components that the engine was detecting numerically.
+The decomposition of $W(n)$ follows directly from its definition and exposes the exact harmonic, linear, and fractional‑part components that the engine was detecting numerically.
 
 This section is the mathematical bridge between:
 - the SVET Prime experimental baselines, and  
 - the formal analytic structure needed for a proofline.
 
-It is the first "pen-to-paper" step in converting the engine's behavior into a rigorous asymptotic framework.
+It is the first “pen‑to‑paper” step in converting the engine’s behavior into a rigorous asymptotic framework.
 
 ---
 
@@ -84,7 +84,7 @@ Combine the constant and harmonic contributions:
 
 $$
 W(n) 
-= (n - 2) + n \ln n + (\gamma - 1)n + O(1) 
+= (n - 2) + n \ln n + (\gamma - 1)n + O(1)
 - \sum_{d=2}^{n-1} \left\{ \frac{n}{d} \right\}.
 $$
 

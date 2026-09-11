@@ -20,5 +20,5 @@ header-includes:
 
 ---
 
-## 0. Notes on this document
+## Notes on this document
 *This repository is a private scratch‑pad for experimental mathematical development. All content is written in Markdown with MathJax (LaTeX math) and is intended for Pandoc conversion to LaTeX/PDF for archival or publication. This file serves as the living abstract and front‑matter for the proofline engine. Use Git history for versioning; keep the filename `README.md` or `proofline.md` as the single source of truth.*

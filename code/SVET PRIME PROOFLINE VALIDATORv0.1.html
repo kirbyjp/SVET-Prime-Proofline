@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SVET · Prime Proofline Validator v0.1</title>
+<style>
+  :root {
+    --bg:        #080b0f;
+    --surface:   #0d1117;
+    --border:    #1e2a38;
+    --border2:   #243040;
+    --text:      #c9d1d9;
+    --dim:       #6e7f92;
+    --accent:    #00d4aa;
+    --amber:     #f0a500;
+    --red:       #ff4455;
+    --green:     #00c87a;
+    --yellow:    #f0c040;
+    --prime-dot: #00d4aa;
+    --comp-dot:  #ff1e6e;
+    --mono:      'JetBrains Mono', 'Fira Mono', 'Consolas', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 24px 28px;
+  }
+
+  /* ── Header ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+  }
+  .header-top {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+  }
+  .header h1 {
+    font-size: 15px;
+    letter-spacing: .08em;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .header .ver { color: var(--dim); font-size: 11px; }
+  .header .mission {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: .04em;
+  }
+
+  /* ── Panels ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    margin-bottom: 18px;
+  }
+  .panel-label {
+    font-size: 10px;
+    letter-spacing: .12em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+
+  /* ── Control row ── */
+  .control-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .ctrl-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .ctrl-group label { color: var(--dim); font-size: 11px; }
+
+  input[type="number"] {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 5px 8px;
+    width: 88px;
+  }
+  input[type="number"]:focus { outline: 1px solid var(--accent); }
+
+  input[type="checkbox"] { accent-color: var(--accent); }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 7px 16px;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    letter-spacing: .04em;
+    transition: background .15s, color .15s;
+  }
+  .btn-run {
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+    border-color: var(--accent);
+  }
+  .btn-run:hover { background: #00ffcc; }
+  .btn-secondary { background: transparent; color: var(--text); }
+  .btn-secondary:hover { background: var(--border2); color: var(--accent); }
+  .btn-amber { background: transparent; color: var(--amber); border-color: var(--amber); }
+  .btn-amber:hover { background: var(--amber); color: #000; }
+
+  .spinner { color: var(--amber); font-size: 11px; display: none; }
+
+  /* ── Truth targets display ── */
+  .truth-targets {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .truth-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .truth-label { font-size: 10px; color: var(--dim); letter-spacing: .08em; }
+  .truth-val { font-size: 14px; color: var(--amber); font-weight: 700; }
+  .truth-lock { font-size: 10px; color: var(--dim); }
+
+  /* ── Canvas ── */
+  canvas {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    display: block;
+    max-width: 100%;
+  }
+
+  /* ── Diagnostics badges ── */
+  .badge-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .badge {
+    padding: 6px 14px;
+    font-size: 11px;
+    letter-spacing: .06em;
+    border: 1px solid;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 130px;
+  }
+  .badge-sub-label { font-size: 9px; color: var(--dim); letter-spacing: .1em; text-transform: uppercase; }
+  .badge-val { font-size: 13px; font-weight: 700; }
+  .badge-note { font-size: 10px; }
+
+  .badge-green  { border-color: var(--green);  }
+  .badge-yellow { border-color: var(--yellow); }
+  .badge-red    { border-color: var(--red);    }
+  .badge-grey   { border-color: var(--border2); }
+
+  .badge-green  .badge-val { color: var(--green);  }
+  .badge-yellow .badge-val { color: var(--yellow); }
+  .badge-red    .badge-val { color: var(--red);    }
+  .badge-grey   .badge-val { color: var(--dim);    }
+
+  .aggregate-badge {
+    padding: 8px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    border: 2px solid;
+    text-transform: uppercase;
+  }
+  .aggregate-green  { border-color: var(--green);  color: var(--green);  }
+  .aggregate-yellow { border-color: var(--yellow); color: var(--yellow); }
+  .aggregate-red    { border-color: var(--red);    color: var(--red);    }
+  .aggregate-grey   { border-color: var(--border2); color: var(--dim);   }
+
+  /* ── Telemetry row ── */
+  .telem-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .telem-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+  }
+  .telem-label { font-size: 10px; color: var(--dim); }
+  .telem-val   { font-size: 13px; color: var(--text); font-weight: 600; }
+
+  /* ── JSON / CSV panels ── */
+  .dual-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 10px;
+    resize: vertical;
+    min-height: 160px;
+    line-height: 1.5;
+  }
+  textarea:focus { outline: 1px solid var(--accent); }
+  textarea[readonly] { color: #7a8fa0; cursor: default; }
+
+  .preview-box {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: #7a8fa0;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 10px;
+    min-height: 160px;
+    white-space: pre;
+    overflow: hidden;
+    user-select: all;
+    line-height: 1.5;
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* ── Tooltip ── */
+  #tooltip {
+    position: fixed;
+    display: none;
+    background: rgba(8,11,15,0.97);
+    border: 1px solid var(--accent);
+    padding: 9px 13px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 16px rgba(0,0,0,.6);
+    line-height: 1.7;
+    min-width: 200px;
+  }
+  #tooltip strong { color: var(--accent); }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: 18px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--dim);
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  .csv-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .status-idle { color: var(--dim); font-size: 11px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-top">
+    <h1>SVET · PRIME PROOFLINE VALIDATOR</h1>
+    <span class="ver">v0.1 · September 2026</span>
+  </div>
+  <div class="mission">Validates SVET-Prime decomposition of W(n) against classical number theory · Harmonic baseline only · Emits Green / Yellow / Red proofline verdict</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CONTROL PANEL
+════════════════════════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-label">Control Panel</div>
+  <div class="control-row">
+    <div class="ctrl-group">
+      <label>Range min</label>
+      <input type="number" id="rangeMin" value="10000" min="2" max="100000">
+    </div>
+    <div class="ctrl-group">
+      <label>Range max</label>
+      <input type="number" id="rangeMax" value="11000" min="10" max="100000">
+    </div>
+    <div class="ctrl-group">
+      <label>
+        <input type="checkbox" id="csvEnabled"> Generate CSV on run
+      </label>
+    </div>
+    <div class="ctrl-group">
+      <label>
+        <input type="checkbox" id="diagVisible" checked> Show diagnostics
+      </label>
+    </div>
+    <button class="btn btn-run" onclick="runValidator()">Execute Run</button>
+    <button class="btn btn-secondary" onclick="resetZoom()">Reset Zoom</button>
+    <span class="spinner" id="spinner">⚙ Computing…</span>
+  </div>
+
+  <!-- Truth targets (locked) -->
+  <div class="truth-targets">
+    <div class="truth-item">
+      <span class="truth-label">TRUTH TARGET — A</span>
+      <span class="truth-val">A = 1.000000</span>
+      <span class="truth-lock">locked · harmonic coefficient</span>
+    </div>
+    <div class="truth-item">
+      <span class="truth-label">TRUTH TARGET — B</span>
+      <span class="truth-val">B = γ ≈ 0.577216</span>
+      <span class="truth-lock">locked · Euler–Mascheroni constant</span>
+    </div>
+    <div class="truth-item">
+      <span class="truth-label">BASELINE MODEL</span>
+      <span class="truth-val" style="color:var(--accent)">W(n) = n·ln(n) + γ·n + Δ_W(n)</span>
+      <span class="truth-lock">harmonic · fixed · not selectable</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CANVAS
+════════════════════════════════════════════════════════════ -->
+<div class="panel" style="padding-bottom:12px;">
+  <div class="panel-label">Residual Field  Δ_W(n) = W(n) − [n·ln(n) + γ·n]</div>
+  <div style="position:relative; display:inline-block; width:100%;">
+    <canvas id="chart" width="1450" height="520"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--prime-dot)"></div> Prime (resonance isolate)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--comp-dot)"></div> Composite (collapse valley)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0a50066; border-radius:0; width:18px; height:2px;"></div> Zero baseline (classical fit)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow); border-radius:0; width:18px; height:1px;"></div> Residual bound (±σ)</div>
+  </div>
+</div>
+<div id="tooltip"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     DIAGNOSTICS
+════════════════════════════════════════════════════════════ -->
+<div class="panel" id="diagPanel">
+  <div class="panel-label">Proofline Diagnostics</div>
+  <div id="diagContent">
+    <div class="status-idle">No run yet. Execute a run to generate diagnostics.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JSON INPUT / OUTPUT
+════════════════════════════════════════════════════════════ -->
+<div class="dual-col">
+  <!-- JSON INPUT -->
+  <div class="panel">
+    <div class="panel-label">JSON Input — Paste &amp; Load State</div>
+    <textarea id="jsonInput" placeholder='Paste a saved proofline JSON snapshot here, then click "Load State" to restore the control panel.'></textarea>
+    <div class="panel-actions">
+      <button class="btn btn-secondary" onclick="loadJsonState()">Load State</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('jsonInput').value=''">Clear</button>
+      <span id="jsonLoadStatus" style="font-size:11px; color:var(--dim);"></span>
+    </div>
+  </div>
+
+  <!-- JSON OUTPUT -->
+  <div class="panel">
+    <div class="panel-label">JSON Output — Proof Artifact (read-only · select-all to copy)</div>
+    <div class="preview-box" id="jsonOutput">No output yet.</div>
+    <div class="panel-actions">
+      <button class="btn btn-secondary" onclick="copyJson()">Copy JSON</button>
+      <button class="btn btn-amber" onclick="downloadJson()">Download JSON</button>
+      <span id="jsonCopyStatus" style="font-size:11px; color:var(--dim);"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CSV
+════════════════════════════════════════════════════════════ -->
+<div class="panel" id="csvPanel" style="display:none;">
+  <div class="panel-label">CSV Preview — Summary (first 20 · last 20)</div>
+  <div class="preview-box" id="csvPreview" style="min-height:120px;">No CSV data.</div>
+  <div class="panel-actions">
+    <button class="btn btn-amber" onclick="downloadCsv()">Download Full CSV</button>
+    <span id="csvRowCount" style="font-size:11px;color:var(--dim);"></span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT ENGINE
+════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ── Constants ──────────────────────────────────────────────────────────────
+const GAMMA      = 0.5772156649015329;
+const A_TARGET   = 1.0;
+const B_TARGET   = GAMMA;
+const VERSION    = '0.1';
+
+// Tolerance thresholds (hidden from UI, internal only)
+const TOL_A_GREEN    = 0.005;
+const TOL_A_YELLOW   = 0.02;
+const TOL_B_GREEN    = 0.005;
+const TOL_B_YELLOW   = 0.02;
+const TOL_RES_GREEN  = 50;
+const TOL_RES_YELLOW = 200;
+const TOL_PRIME_GREEN  = 1.0;    // 100%
+const TOL_PRIME_YELLOW = 0.995;  // 99.5%
+
+// ── State ──────────────────────────────────────────────────────────────────
+let masterData   = [];
+let globalMaxRes = 1;
+let viewMinN     = 10000;
+let viewMaxN     = 11000;
+let initialMinN  = 10000;
+let initialMaxN  = 11000;
+let lastSnapshot = null;
+let fullCsvRows  = [];
+
+// ── Canvas ─────────────────────────────────────────────────────────────────
+const canvas  = document.getElementById('chart');
+const ctx     = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function isPrimeSimple(n) {
+  if (n < 2) return false;
+  if (n === 2) return true;
+  if (n % 2 === 0) return false;
+  for (let i = 3; i * i <= n; i += 2) if (n % i === 0) return false;
+  return true;
+}
+
+function computeW(n) {
+  // Direct definition: W(n) = Σ_{d=2}^{n-1} (1 + floor(n/d))
+  let w = 0;
+  for (let d = 2; d < n; d++) w += 1 + Math.floor(n / d);
+  return w;
+}
+
+function classicalBaseline(n) {
+  return n * Math.log(n) + GAMMA * n;
+}
+
+function fmtTS() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${yy}${mm}${dd}.${hh}${mi}`;
+}
+
+function verdictClass(v) {
+  return v === 'green' ? 'badge-green' : v === 'yellow' ? 'badge-yellow' : v === 'red' ? 'badge-red' : 'badge-grey';
+}
+function aggregateClass(v) {
+  return v === 'green' ? 'aggregate-green' : v === 'yellow' ? 'aggregate-yellow' : v === 'red' ? 'aggregate-red' : 'aggregate-grey';
+}
+
+function judgeCoeff(fitted, target, gTol, yTol) {
+  const diff = Math.abs(fitted - target);
+  if (diff <= gTol)      return 'green';
+  else if (diff <= yTol) return 'yellow';
+  return 'red';
+}
+function judgeRes(maxRes) {
+  if (maxRes <= TOL_RES_GREEN)  return 'green';
+  if (maxRes <= TOL_RES_YELLOW) return 'yellow';
+  return 'red';
+}
+function judgePrime(acc) {
+  if (acc >= TOL_PRIME_GREEN)  return 'green';
+  if (acc >= TOL_PRIME_YELLOW) return 'yellow';
+  return 'red';
+}
+function aggregateVerdict(verdicts) {
+  if (verdicts.includes('red'))    return 'red';
+  if (verdicts.includes('yellow')) return 'yellow';
+  return 'green';
+}
+
+// ── Regression (least squares: W = A*(n ln n) + B*n) ──────────────────────
+function fitHarmonic(data) {
+  let S11=0, S12=0, S22=0, T1=0, T2=0;
+  data.forEach(d => {
+    const x1 = d.n * Math.log(d.n);
+    const x2 = d.n;
+    S11 += x1*x1; S12 += x1*x2; S22 += x2*x2;
+    T1  += d.wn * x1;
+    T2  += d.wn * x2;
+  });
+  const det = S11*S22 - S12*S12;
+  if (Math.abs(det) < 1e-8) return { A: A_TARGET, B: B_TARGET };
+  return { A: (T1*S22 - T2*S12)/det, B: (S11*T2 - T1*S12)/det };
+}
+
+// ── Main run ───────────────────────────────────────────────────────────────
+async function runValidator() {
+  const minN = parseInt(document.getElementById('rangeMin').value);
+  const maxN = parseInt(document.getElementById('rangeMax').value);
+  const csvEnabled    = document.getElementById('csvEnabled').checked;
+  const diagVisible   = document.getElementById('diagVisible').checked;
+
+  if (isNaN(minN)||isNaN(maxN)||minN<2||maxN<=minN) {
+    alert('Invalid range. min ≥ 2 and max > min.'); return;
+  }
+
+  document.getElementById('spinner').style.display = 'inline';
+  document.getElementById('jsonOutput').textContent = 'Computing…';
+  document.getElementById('diagContent').innerHTML  = '<div class="status-idle">Running…</div>';
+  await new Promise(r => setTimeout(r, 20));
+
+  viewMinN = minN; viewMaxN = maxN;
+  initialMinN = minN; initialMaxN = maxN;
+  masterData = [];
+  fullCsvRows = [];
+
+  const t0 = performance.now();
+
+  // ── Compute W(n) for each n in range ──
+  let primeCount = 0;
+  let correctPrime = 0;
+  let totalPrimeChecks = 0;
+
+  for (let n = minN; n <= maxN; n++) {
+    const wn      = computeW(n);
+    const isPrime = isPrimeSimple(n);
+    const base    = classicalBaseline(n);
+    const res     = wn - base;
+
+    if (isPrime) primeCount++;
+
+    // prime/composite correctness: we verify isPrime against divisor check
+    const hasDivisor = (() => { for (let d=2;d*d<=n;d++) if(n%d===0) return true; return false; })();
+    const trueIsPrime = (n>=2) && !hasDivisor;
+    totalPrimeChecks++;
+    if (trueIsPrime === isPrime) correctPrime++;
+
+    masterData.push({ n, wn, isPrime, base, res });
+    if (n % 500 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+
+  const elapsed = (performance.now() - t0).toFixed(1);
+
+  // ── Regression ──
+  const reg = fitHarmonic(masterData);
+
+  // ── Residuals (against classical fixed baseline, not fitted) ──
+  globalMaxRes = 0;
+  masterData.forEach(d => {
+    globalMaxRes = Math.max(globalMaxRes, Math.abs(d.res));
+  });
+
+  // ── Verdicts ──
+  const vA     = judgeCoeff(reg.A, A_TARGET, TOL_A_GREEN, TOL_A_YELLOW);
+  const vB     = judgeCoeff(reg.B, B_TARGET, TOL_B_GREEN, TOL_B_YELLOW);
+  const vRes   = judgeRes(globalMaxRes);
+  const primeAcc = totalPrimeChecks > 0 ? correctPrime / totalPrimeChecks : 1;
+  const vPrime = judgePrime(primeAcc);
+  const vAgg   = aggregateVerdict([vA, vB, vRes, vPrime]);
+
+  // ── Build snapshot ──
+  const snapshot = {
+    version:    VERSION,
+    timestamp:  new Date().toISOString(),
+    run_config: {
+      range_min:         minN,
+      range_max:         maxN,
+      csv_export_enabled: csvEnabled,
+      diagnostics_visible: diagVisible
+    },
+    model_type:    'harmonic',
+    truth_targets: { A: A_TARGET, B: B_TARGET },
+    A_fitted:      parseFloat(reg.A.toFixed(8)),
+    B_fitted:      parseFloat(reg.B.toFixed(8)),
+    A_drift:       parseFloat((reg.A - A_TARGET).toFixed(8)),
+    B_drift:       parseFloat((reg.B - B_TARGET).toFixed(8)),
+    globalMaxRes:  parseFloat(globalMaxRes.toFixed(4)),
+    prime_count:   primeCount,
+    node_count:    masterData.length,
+    prime_accuracy: parseFloat(primeAcc.toFixed(6)),
+    elapsed_ms:    parseFloat(elapsed),
+    verdicts: {
+      A_coeff:   vA,
+      B_coeff:   vB,
+      residuals: vRes,
+      prime_accuracy: vPrime,
+      aggregate: vAgg
+    },
+    tolerance_profile: {
+      A_green:  TOL_A_GREEN,  A_yellow:  TOL_A_YELLOW,
+      B_green:  TOL_B_GREEN,  B_yellow:  TOL_B_YELLOW,
+      sigma_green:  TOL_RES_GREEN,  sigma_yellow: TOL_RES_YELLOW,
+      prime_accuracy_green:  TOL_PRIME_GREEN,
+      prime_accuracy_yellow: TOL_PRIME_YELLOW
+    }
+  };
+  lastSnapshot = snapshot;
+
+  // ── Render JSON output ──
+  document.getElementById('jsonOutput').textContent = JSON.stringify(snapshot, null, 2);
+
+  // ── Render diagnostics ──
+  if (diagVisible) {
+    renderDiagnostics(snapshot, elapsed);
+  } else {
+    document.getElementById('diagContent').innerHTML = '<div class="status-idle">Diagnostics hidden (toggle in control panel).</div>';
+  }
+  document.getElementById('diagPanel').style.display = diagVisible ? '' : '';
+
+  // ── CSV ──
+  buildCsv(snapshot, csvEnabled, minN, maxN);
+
+  // ── Draw canvas ──
+  drawCanvas();
+
+  document.getElementById('spinner').style.display = 'none';
+}
+
+// ── Diagnostics render ─────────────────────────────────────────────────────
+function renderDiagnostics(snap, elapsed) {
+  const { verdicts: v, A_fitted, B_fitted, A_drift, B_drift, globalMaxRes, prime_accuracy, prime_count, node_count } = snap;
+
+  const driftDir = d => d > 0 ? '▲' : d < 0 ? '▼' : '—';
+  const fmtDrift = d => (d >= 0 ? '+' : '') + d.toFixed(6);
+
+  const html = `
+    <div class="badge-row">
+      <div class="badge ${verdictClass(v.A_coeff)}">
+        <span class="badge-sub-label">A coefficient</span>
+        <span class="badge-val">${v.A_coeff.toUpperCase()}</span>
+        <span class="badge-note">fitted ${A_fitted.toFixed(6)} · drift ${fmtDrift(A_drift)} ${driftDir(A_drift)}</span>
+      </div>
+      <div class="badge ${verdictClass(v.B_coeff)}">
+        <span class="badge-sub-label">B coefficient</span>
+        <span class="badge-val">${v.B_coeff.toUpperCase()}</span>
+        <span class="badge-note">fitted ${B_fitted.toFixed(6)} · drift ${fmtDrift(B_drift)} ${driftDir(B_drift)}</span>
+      </div>
+      <div class="badge ${verdictClass(v.residuals)}">
+        <span class="badge-sub-label">Residual bound</span>
+        <span class="badge-val">${v.residuals.toUpperCase()}</span>
+        <span class="badge-note">±${globalMaxRes.toFixed(2)} ticks max</span>
+      </div>
+      <div class="badge ${verdictClass(v.prime_accuracy)}">
+        <span class="badge-sub-label">Prime accuracy</span>
+        <span class="badge-val">${v.prime_accuracy.toUpperCase()}</span>
+        <span class="badge-note">${(prime_accuracy*100).toFixed(3)}% correct</span>
+      </div>
+      <div class="aggregate-badge ${aggregateClass(v.aggregate)}">
+        ${v.aggregate.toUpperCase()}
+      </div>
+    </div>
+    <div class="telem-row">
+      <div class="telem-item"><div class="telem-label">nodes evaluated</div><div class="telem-val">${node_count.toLocaleString()}</div></div>
+      <div class="telem-item"><div class="telem-label">primes found</div><div class="telem-val">${prime_count.toLocaleString()}</div></div>
+      <div class="telem-item"><div class="telem-label">A fitted</div><div class="telem-val">${A_fitted.toFixed(8)}</div></div>
+      <div class="telem-item"><div class="telem-label">B fitted</div><div class="telem-val">${B_fitted.toFixed(8)}</div></div>
+      <div class="telem-item"><div class="telem-label">A drift from 1</div><div class="telem-val" style="color:${Math.abs(snap.A_drift)<=TOL_A_GREEN?'var(--green)':Math.abs(snap.A_drift)<=TOL_A_YELLOW?'var(--yellow)':'var(--red)'}">${fmtDrift(A_drift)}</div></div>
+      <div class="telem-item"><div class="telem-label">B drift from γ</div><div class="telem-val" style="color:${Math.abs(snap.B_drift)<=TOL_B_GREEN?'var(--green)':Math.abs(snap.B_drift)<=TOL_B_YELLOW?'var(--yellow)':'var(--red)'}">${fmtDrift(B_drift)}</div></div>
+      <div class="telem-item"><div class="telem-label">max |Δ_W(n)|</div><div class="telem-val">${globalMaxRes.toFixed(4)}</div></div>
+      <div class="telem-item"><div class="telem-label">elapsed</div><div class="telem-val">${elapsed} ms</div></div>
+    </div>
+  `;
+  document.getElementById('diagContent').innerHTML = html;
+}
+
+// ── CSV ────────────────────────────────────────────────────────────────────
+function buildCsv(snap, csvEnabled, minN, maxN) {
+  const csvPanel = document.getElementById('csvPanel');
+  if (!csvEnabled) { csvPanel.style.display = 'none'; fullCsvRows = []; return; }
+
+  // Header block
+  const header = [
+    `# svet.proofline.${minN}-${maxN}.${fmtTS()}.csv`,
+    `# version: ${snap.version}`,
+    `# timestamp: ${snap.timestamp}`,
+    `# range_min: ${snap.run_config.range_min}`,
+    `# range_max: ${snap.run_config.range_max}`,
+    `# A_fitted: ${snap.A_fitted}`,
+    `# B_fitted: ${snap.B_fitted}`,
+    `# globalMaxRes: ${snap.globalMaxRes}`,
+    `# status_flag: ${snap.verdicts.aggregate}`,
+    `n,status,W_cost,baseline_prediction,harmonic_residual`
+  ];
+
+  fullCsvRows = [...header];
+  masterData.forEach(d => {
+    fullCsvRows.push(`${d.n},${d.isPrime?'prime':'composite'},${d.wn},${d.base.toFixed(4)},${d.res.toFixed(4)}`);
+  });
+
+  const total = masterData.length;
+  const preview20start = fullCsvRows.slice(0, 10 + 20); // header + first 20 data rows
+  const preview20end   = fullCsvRows.slice(-20);
+  const previewText    = [
+    ...preview20start,
+    `… (${total} total rows) …`,
+    ...preview20end
+  ].join('\n');
+
+  document.getElementById('csvPreview').textContent = previewText;
+  document.getElementById('csvRowCount').textContent = `${total.toLocaleString()} data rows total`;
+  csvPanel.style.display = '';
+}
+
+// ── Canvas draw ────────────────────────────────────────────────────────────
+function drawCanvas() {
+  const w = canvas.width  - 80;
+  const h = canvas.height - 60;
+  const ox = 60;
+  const oy = canvas.height / 2;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Grid lines
+  ctx.strokeStyle = '#131c26';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const y = oy - (i/4)*(h/2);
+    ctx.beginPath(); ctx.moveTo(ox, y); ctx.lineTo(ox+w, y); ctx.stroke();
+    const y2 = oy + (i/4)*(h/2);
+    ctx.beginPath(); ctx.moveTo(ox, y2); ctx.lineTo(ox+w, y2); ctx.stroke();
+  }
+
+  // Zero baseline
+  ctx.strokeStyle = 'rgba(240,165,0,0.35)';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox+w, oy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Residual bound lines (±σ = globalMaxRes scale reference)
+  const boundY = h / 2 * 0.9;
+  ctx.strokeStyle = 'rgba(240,192,64,0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(ox, oy-boundY); ctx.lineTo(ox+w, oy-boundY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, oy+boundY); ctx.lineTo(ox+w, oy+boundY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Axis labels
+  ctx.fillStyle = '#3a5068';
+  ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
+  ctx.fillText(`N  [${Math.round(viewMinN)} → ${Math.round(viewMaxN)}]`, ox, canvas.height - 8);
+  ctx.fillText(`+${globalMaxRes.toFixed(0)}`, 4, oy - boundY + 4);
+  ctx.fillText(`-${globalMaxRes.toFixed(0)}`, 4, oy + boundY + 4);
+  ctx.fillText('0', ox - 16, oy + 4);
+
+  const rangeN = (viewMaxN - viewMinN) || 1;
+  const vis = masterData.filter(d => d.n >= viewMinN && d.n <= viewMaxN);
+
+  // Composites
+  vis.forEach(d => {
+    if (!d.isPrime) {
+      const x = ox + ((d.n - viewMinN) / rangeN) * w;
+      const y = oy - (d.res / (globalMaxRes||1)) * (h/2);
+      if (y < 10 || y > canvas.height-10) return;
+      ctx.fillStyle = 'rgba(255,30,110,0.18)';
+      ctx.fillRect(x, y, 1.2, 1.2);
+    }
+  });
+
+  // Primes
+  vis.forEach(d => {
+    if (d.isPrime) {
+      const x = ox + ((d.n - viewMinN) / rangeN) * w;
+      const y = oy - (d.res / (globalMaxRes||1)) * (h/2);
+      if (y < 10 || y > canvas.height-10) return;
+      ctx.fillStyle = '#00d4aa';
+      ctx.globalAlpha = 0.9;
+      ctx.fillRect(x-1.5, y-1.5, 3, 3);
+      ctx.globalAlpha = 1;
+    }
+  });
+
+  // Labels
+  ctx.fillStyle = '#3a5068';
+  ctx.font = '11px monospace';
+  ctx.fillText('Δ_W(n)  residual field — harmonic baseline subtracted', ox, 18);
+}
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#1e2a38';
+  ctx.font = '12px monospace';
+  ctx.fillText('Execute a run to populate the residual field.', 80, canvas.height/2);
+}
+
+// ── Zoom ───────────────────────────────────────────────────────────────────
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (!masterData.length) return;
+  const zf = e.deltaY < 0 ? 0.85 : 1.15;
+  const range = viewMaxN - viewMinN;
+  const mx = e.offsetX;
+  const w  = canvas.width - 80;
+  const mn = viewMinN + ((mx - 60) / w) * range;
+  let nr = range * zf;
+  if (nr < 20) nr = 20;
+  viewMinN = mn - (mn - viewMinN) * (nr/range);
+  viewMaxN = mn + (viewMaxN - mn) * (nr/range);
+  const lo = masterData[0].n, hi = masterData[masterData.length-1].n;
+  if (viewMinN < lo) viewMinN = lo;
+  if (viewMaxN > hi) viewMaxN = hi;
+  drawCanvas();
+}, { passive: false });
+
+function resetZoom() {
+  viewMinN = initialMinN; viewMaxN = initialMaxN;
+  if (masterData.length) drawCanvas();
+}
+
+// ── Tooltip ────────────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+  if (!masterData.length) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx   = e.clientX - rect.left - 60;
+  const w    = canvas.width - 80;
+  if (mx < 0 || mx > w) { tooltip.style.display='none'; return; }
+  const hovN = Math.round(viewMinN + (mx/w)*(viewMaxN-viewMinN));
+  const node = masterData.find(d => d.n >= hovN);
+  if (!node) { tooltip.style.display='none'; return; }
+
+  // Crosshair
+  drawCanvas();
+  const cx = 60 + ((node.n - viewMinN)/(viewMaxN-viewMinN))*(canvas.width-80);
+  ctx.strokeStyle = 'rgba(0,212,170,0.25)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2,3]);
+  ctx.beginPath(); ctx.moveTo(cx,10); ctx.lineTo(cx,canvas.height-10); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const classical = node.base.toFixed(2);
+  const drift = (node.wn - node.base);
+  tooltip.innerHTML = `
+    <strong>N:</strong> ${node.n}<br>
+    <strong>Status:</strong> <span style="color:${node.isPrime?'var(--prime-dot)':'#ff6688'}">${node.isPrime?'PRIME':'Composite'}</span><br>
+    <strong>W(n):</strong> ${node.wn.toLocaleString()}<br>
+    <strong>Classical:</strong> ${parseFloat(classical).toLocaleString(undefined,{maximumFractionDigits:2})}<br>
+    <strong>Δ_W(n):</strong> ${drift >= 0 ? '+' : ''}${drift.toFixed(4)}<br>
+    <strong>|Δ| / max:</strong> ${(Math.abs(drift)/globalMaxRes*100).toFixed(1)}%
+  `;
+  tooltip.style.display = 'block';
+  let px = e.clientX + 16, py = e.clientY - 40;
+  if (px + 210 > window.innerWidth)  px = e.clientX - 225;
+  if (py + 120 > window.innerHeight) py = e.clientY - 125;
+  if (py < 8) py = 8;
+  tooltip.style.left = px + 'px';
+  tooltip.style.top  = py + 'px';
+});
+canvas.addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+  if (masterData.length) drawCanvas();
+});
+
+// ── JSON load ──────────────────────────────────────────────────────────────
+function loadJsonState() {
+  const raw = document.getElementById('jsonInput').value.trim();
+  const status = document.getElementById('jsonLoadStatus');
+  if (!raw) { status.textContent = 'Nothing to load.'; return; }
+  try {
+    const snap = JSON.parse(raw);
+    const cfg  = snap.run_config || {};
+    if (cfg.range_min !== undefined) document.getElementById('rangeMin').value = cfg.range_min;
+    if (cfg.range_max !== undefined) document.getElementById('rangeMax').value = cfg.range_max;
+    if (cfg.csv_export_enabled !== undefined) document.getElementById('csvEnabled').checked = cfg.csv_export_enabled;
+    if (cfg.diagnostics_visible !== undefined) document.getElementById('diagVisible').checked = cfg.diagnostics_visible;
+    status.style.color = 'var(--green)';
+    status.textContent = '✓ State loaded. Adjust controls if needed, then Execute Run.';
+  } catch(ex) {
+    status.style.color = 'var(--red)';
+    status.textContent = '✗ Invalid JSON — ' + ex.message;
+  }
+}
+
+// ── JSON copy / download ───────────────────────────────────────────────────
+function copyJson() {
+  const text = document.getElementById('jsonOutput').textContent;
+  if (text === 'No output yet.' || text === 'Computing…') return;
+  navigator.clipboard.writeText(text).then(() => {
+    const s = document.getElementById('jsonCopyStatus');
+    s.style.color = 'var(--green)';
+    s.textContent = '✓ Copied';
+    setTimeout(() => s.textContent = '', 2000);
+  });
+}
+
+function downloadJson() {
+  if (!lastSnapshot) { alert('No snapshot to download.'); return; }
+  const minN = lastSnapshot.run_config.range_min;
+  const maxN = lastSnapshot.run_config.range_max;
+  const fn   = `svet.proofline.${minN}-${maxN}.${fmtTS()}.json`;
+  const blob = new Blob([JSON.stringify(lastSnapshot, null, 2)], { type:'application/json' });
+  triggerDownload(blob, fn);
+}
+
+// ── CSV download ───────────────────────────────────────────────────────────
+function downloadCsv() {
+  if (!fullCsvRows.length) { alert('No CSV data. Enable CSV in control panel and re-run.'); return; }
+  const snap = lastSnapshot;
+  const minN = snap.run_config.range_min;
+  const maxN = snap.run_config.range_max;
+  const fn   = `svet.proofline.${minN}-${maxN}.${fmtTS()}.csv`;
+  const blob = new Blob([fullCsvRows.join('\n')], { type:'text/csv' });
+  triggerDownload(blob, fn);
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href    = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Sync controls → output JSON on control change (no run needed) ──────────
+// (JSON output only updates on run; controls update from JSON load)
+
+// ── Init ───────────────────────────────────────────────────────────────────
+clearCanvas();
+</script>
+</body>
+</html>

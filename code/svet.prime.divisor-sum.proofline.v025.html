@@ -1,0 +1,459 @@
+<!-- REM: v0.25 - Added header Rem-notes, compact timestamped CSV export naming, collapse valley hot-pink/gray color toggle, and smart tooltip edge boundary clamping. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>svet.prime.divisor-sum.proofline.v025</title>
+    <style>
+        body { background: #0a0a0a; color: #eee; font-family: monospace; padding: 20px; line-height: 1.5; }
+        h3 { color: #00ffcc; margin-bottom: 5px; }
+        .panel { background: #111; border: 1px solid #333; padding: 12px; margin-bottom: 15px; }
+        input, select, button { padding: 6px 10px; background: #222; color: #eee; border: 1px solid #444; font-family: monospace; cursor: pointer; }
+        button:hover { background: #333; color: #00ffcc; }
+        canvas { border: 1px solid #444; background: linear-gradient(180deg, #0d0d0d 0%, #121212 100%); max-width: 100%; display: block; margin-top: 10px; cursor: crosshair; }
+        .stats { margin-top: 15px; font-size: 13px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .regression { margin-top: 10px; font-size: 12px; color: #aaa; }
+        #tooltip { position: absolute; display: none; background: rgba(15,15,15,0.95); border: 1px solid #00ffcc; padding: 8px 12px; font-size: 11px; pointer-events: none; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <h3>SVET Engine: Divisor-Sum Proofline Analyzer (v0.25)</h3>
+    <p>Instrument Panel: Color-Lane Consistency, Terrain Toggle, & Edge-Clamped Telemetry</p>
+    
+    <div class="panel">
+        Range: min <input type="number" id="minInput" value="13000" min="2" max="30000" style="width: 70px;"> 
+        max <input type="number" id="maxInput" value="14000" min="10" max="30000" style="width: 70px;">
+        
+        <span style="margin-left: 15px;">Baseline Mode:</span>
+        <select id="baselineModel">
+            <option value="harmonic">Harmonic (Amber) — A·(n ln n) + B·n</option>
+            <option value="quadratic">Quadratic (Magenta) — A·n² + B·n</option>
+            <option value="linear">Linear (Cyan) — A·n</option>
+            <option value="comparative" selected>Comparative Overlay (All 3) — Cyan + Magenta + Amber</option>
+        </select>
+
+        <button id="runBtn" onclick="runEngine()" style="margin-left: 10px; background: #00ffcc; color: #000; font-weight: bold;">Execute Run</button>
+        <button onclick="resetZoom()" style="margin-left: 5px;">Reset Zoom</button>
+        <button onclick="exportPhenomenonCSV()" style="margin-left: 5px; background: #ffcc00; color: #000; font-weight: bold;" title="Export Active Range CSV">Export Phenomenon CSV</button>
+        <span id="spinner" style="margin-left: 10px; display: none; color: #ffcc00;">⚙ Processing Interrogation Matrix...</span>
+    </div>
+
+    <div style="margin-bottom: 15px; font-size: 13px; display: flex; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <label><input type="checkbox" id="showComposites" checked onchange="redrawCanvas()"> Show Collapse Valleys</label>
+        <div>
+            Terrain Color: 
+            <select id="terrainColor" onchange="redrawCanvas()" style="padding: 3px 6px;">
+                <option value="pink" selected>Hot Pink (#ff1493)</option>
+                <option value="gray">Subtle Gray (#444)</option>
+            </select>
+        </div>
+        <label><input type="checkbox" id="showTrendline" checked onchange="redrawCanvas()"> Show Baseline Axis (0)</label>
+        <label><input type="checkbox" id="showYieldLines" checked onchange="redrawCanvas()"> Show Yield Bounds</label>
+        <div>
+            Yield Scale (±σ): <input type="range" id="yieldSlider" min="0.1" max="3.0" step="0.1" value="1.0" oninput="redrawCanvas()" style="vertical-align: middle; width: 80px;">
+        </div>
+        <div>
+            Opacity Gain (0 → 1): <input type="range" id="opacitySlider" min="0.0" max="1.0" step="0.01" value="0.12" oninput="updateOpacityLabel(); redrawCanvas();" style="vertical-align: middle; width: 80px;">
+            <span id="opacityVal" style="color: #00ffcc; min-width: 35px; display: inline-block;">0.12</span>
+        </div>
+    </div>
+
+    <!-- Expanded 1450px Instrument Panel Canvas -->
+    <div style="position: relative; display: inline-block;">
+        <canvas id="resonanceChart" width="1450" height="550"></canvas>
+        <div id="tooltip"></div>
+    </div>
+    
+    <div id="stats" class="stats"></div>
+    <div id="regressionResults" class="regression"></div>
+
+    <script>
+        const canvas = document.getElementById('resonanceChart');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+        
+        let masterData = []; 
+        let globalMaxRes = 1;
+        
+        let viewMinN = 13000;
+        let viewMaxN = 14000;
+        let initialMinN = 13000;
+        let initialMaxN = 14000;
+
+        function updateOpacityLabel() {
+            document.getElementById('opacityVal').innerText = parseFloat(document.getElementById('opacitySlider').value).toFixed(2);
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGridBasics();
+        }
+
+        function drawGridBasics() {
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(60, h/2); ctx.lineTo(w-20, h/2);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#777';
+            ctx.font = '11px monospace';
+            ctx.fillText(`Range Axis N: [${Math.round(viewMinN)} → ${Math.round(viewMaxN)}]`, 60, h-10);
+            ctx.fillText("Global Residual Variance Landscape (Primes & Collapse Valleys)", 10, 20);
+        }
+
+        async function runEngine() {
+            const min = parseInt(document.getElementById('minInput').value);
+            const max = parseInt(document.getElementById('maxInput').value);
+            const spinner = document.getElementById('spinner');
+            const stats = document.getElementById('stats');
+            
+            viewMinN = min; viewMaxN = max;
+            initialMinN = min; initialMaxN = max;
+
+            spinner.style.display = 'inline';
+            await new Promise(r => setTimeout(r, 30));
+            clearCanvas();
+
+            masterData = [];
+            let primeCount = 0;
+
+            let S1_h = 0, S2_h = 0, S3_h = 0, T1_h = 0, T2_h = 0; 
+            let S1_q = 0, S2_q = 0, S3_q = 0, T1_q = 0, T2_q = 0; 
+            let S1_l = 0, S2_l = 0, S3_l = 0, T1_l = 0, T2_l = 0; 
+
+            let startTime = performance.now();
+
+            for (let n = min; n <= max; n++) {
+                let cost = 0;
+                let hasExactDivisor = false;
+                let divisorCount = 0;
+
+                for (let d = 2; d < n; d++) {
+                    cost++; 
+                    let sum = 0;
+                    if (n % d === 0) {
+                        hasExactDivisor = true;
+                        divisorCount++;
+                    }
+                    while (sum < n) {
+                        sum += d;
+                        cost++;
+                    }
+                }
+
+                let isPrime = !hasExactDivisor && n >= 2;
+                if (n === 2) isPrime = true;
+                if (isPrime) primeCount++;
+
+                let hX1 = n * Math.log(n), hX2 = n;
+                S1_h += hX1 * hX1; S2_h += hX1 * hX2; S3_h += hX2 * hX2; T1_h += cost * hX1; T2_h += cost * hX2;
+
+                let qX1 = n * n, qX2 = n;
+                S1_q += qX1 * qX1; S2_q += qX1 * qX2; S3_q += qX2 * qX2; T1_q += cost * qX1; T2_q += cost * qX2;
+
+                let lX1 = n, lX2 = 1;
+                S1_l += lX1 * lX1; S2_l += lX1 * lX2; S3_l += lX2 * lX2; T1_l += cost * lX1; T2_l += cost * lX2;
+
+                masterData.push({ n, isPrime, cost, divisorCount, hX1, hX2, qX1, qX2, lX1, lX2, resHarmonic: 0, resQuad: 0, resLinear: 0 });
+
+                if (n % 500 === 0) await new Promise(r => setTimeout(r, 0));
+            }
+
+            let calcTime = (performance.now() - startTime).toFixed(1);
+
+            let solveReg = (S1, S2, S3, T1, T2) => {
+                let det = (S1 * S3) - (S2 * S2);
+                if (Math.abs(det) > 1e-8) {
+                    return { A: (T1 * S3 - T2 * S2) / det, B: (S1 * T2 - T1 * S2) / det };
+                }
+                return { A: 1, B: 0 };
+            };
+
+            let regH = solveReg(S1_h, S2_h, S3_h, T1_h, T2_h);
+            let regQ = solveReg(S1_q, S2_q, S3_q, T1_q, T2_q);
+            let regL = solveReg(S1_l, S2_l, S3_l, T1_l, T2_l);
+
+            globalMaxRes = 0;
+            const activeMode = document.getElementById('baselineModel').value;
+
+            masterData.forEach(d => {
+                d.resHarmonic = d.cost - (regH.A * d.hX1 + regH.B * d.hX2);
+                d.resQuad = d.cost - (regQ.A * d.qX1 + regQ.B * d.qX2);
+                d.resLinear = d.cost - (regL.A * d.lX1 + regL.B * d.lX2);
+
+                let targetRes = activeMode === 'quadratic' ? d.resQuad : (activeMode === 'linear' ? d.resLinear : d.resHarmonic);
+                if (activeMode === 'comparative') {
+                    globalMaxRes = Math.max(globalMaxRes, Math.abs(d.resHarmonic), Math.abs(d.resQuad), Math.abs(d.resLinear));
+                } else {
+                    globalMaxRes = Math.max(globalMaxRes, Math.abs(targetRes));
+                }
+            });
+
+            document.getElementById('regressionResults').innerHTML = 
+                `<strong>Calibrations:</strong> Harmonic [A=${regH.A.toFixed(4)}, B=${regH.B.toFixed(4)}] | Quad [A=${regH.A.toFixed(6)}, B=${regH.B.toFixed(4)}] | Linear [A=${regL.A.toFixed(4)}, B=${regL.B.toFixed(4)}]`;
+            stats.innerHTML = `<strong>Proofline Instrument Telemetry:</strong> Evaluated <strong>${masterData.length}</strong> nodes in <strong>${calcTime}ms</strong>. Discovered <strong>${primeCount}</strong> Resonance Isolates.<br>` +
+                              `• Global Landscape Residual Scale (±X): <strong>±${globalMaxRes.toFixed(2)}</strong> Ticks.`;
+
+            redrawCanvas();
+            spinner.style.display = 'none';
+        }
+
+        function redrawCanvas() {
+            if (masterData.length === 0) return;
+            
+            const w = canvas.width - 80;
+            const h = canvas.height - 80;
+            const originX = 60;
+            const originY = canvas.height / 2;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGridBasics();
+
+            const showComposites = document.getElementById('showComposites').checked;
+            const terrainChoice = document.getElementById('terrainColor').value;
+            const terrainHex = terrainChoice === 'pink' ? '#ff1493' : '#444444';
+
+            const showTrendline = document.getElementById('showTrendline').checked;
+            const showYieldLines = document.getElementById('showYieldLines').checked;
+            const yieldFactor = parseFloat(document.getElementById('yieldSlider').value);
+            const userOpacity = parseFloat(document.getElementById('opacitySlider').value);
+            const activeMode = document.getElementById('baselineModel').value;
+
+            if (showTrendline) {
+                ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 1.2;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(originX + w, originY); ctx.stroke();
+                ctx.setLineDash([]); 
+            }
+
+            if (showYieldLines && globalMaxRes > 0) {
+                let boundYOffset = ( (globalMaxRes * yieldFactor) / globalMaxRes ) * (h / 2);
+                ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 1;
+                ctx.setLineDash([2, 2]);
+                ctx.beginPath(); ctx.moveTo(originX, originY - boundYOffset); ctx.lineTo(originX + w, originY - boundYOffset); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(originX, originY + boundYOffset); ctx.lineTo(originX + w, originY + boundYOffset); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            const rangeN = viewMaxN - viewMinN || 1;
+            const visibleData = masterData.filter(d => d.n >= viewMinN && d.n <= viewMaxN);
+
+            // Render Collapse Valleys with Hot Pink / Gray Toggle & Opacity Gain
+            if (showComposites && userOpacity > 0) {
+                visibleData.forEach(d => {
+                    if (!d.isPrime) {
+                        let x = originX + ((d.n - viewMinN) / rangeN) * w;
+                        let resVal = activeMode === 'quadratic' ? d.resQuad : (activeMode === 'linear' ? d.resLinear : d.resHarmonic);
+                        if (activeMode === 'comparative') resVal = d.resHarmonic;
+
+                        let y = originY - (resVal / (globalMaxRes || 1)) * (h / 2);
+                        if (y >= 10 && y <= canvas.height - 10) {
+                            ctx.fillStyle = terrainHex;
+                            ctx.globalAlpha = userOpacity;
+                            ctx.fillRect(x, y, 1.5, 1.5);
+                            ctx.globalAlpha = 1.0;
+                        }
+                    }
+                });
+            }
+
+            // Render Primes with Color-Lane Consistency
+            if (activeMode === 'comparative') {
+                visibleData.forEach(d => {
+                    if (d.isPrime) {
+                        let x = originX + ((d.n - viewMinN) / rangeN) * w;
+                        
+                        let yL = originY - (d.resLinear / globalMaxRes) * (h / 2);
+                        ctx.fillStyle = '#00ffcc'; ctx.globalAlpha = 0.5;
+                        ctx.fillRect(x - 1, yL - 1, 2, 2);
+
+                        let yQ = originY - (d.resQuad / globalMaxRes) * (h / 2);
+                        ctx.fillStyle = '#ff00ff'; ctx.globalAlpha = 0.5;
+                        ctx.fillRect(x - 1, yQ - 1, 2, 2);
+
+                        let yH = originY - (d.resHarmonic / globalMaxRes) * (h / 2);
+                        ctx.fillStyle = '#ffaa00'; ctx.globalAlpha = 0.9;
+                        ctx.fillRect(x - 1.5, yH - 1.5, 3, 3);
+
+                        ctx.globalAlpha = 1.0;
+                    }
+                });
+
+                ctx.fillStyle = 'rgba(15,15,15,0.85)';
+                ctx.strokeStyle = '#444';
+                ctx.fillRect(canvas.width - 210, 30, 190, 75);
+                ctx.strokeRect(canvas.width - 210, 30, 190, 75);
+                
+                ctx.font = '11px monospace';
+                ctx.fillStyle = '#ffaa00'; ctx.fillRect(canvas.width - 200, 45, 10, 10);
+                ctx.fillStyle = '#eee'; ctx.fillText('Harmonic [A·(n ln n) + B·n]', canvas.width - 182, 54);
+
+                ctx.fillStyle = '#ff00ff'; ctx.fillRect(canvas.width - 200, 65, 10, 10);
+                ctx.fillStyle = '#eee'; ctx.fillText('Quadratic [A·n² + B·n]', canvas.width - 182, 74);
+
+                ctx.fillStyle = '#00ffcc'; ctx.fillRect(canvas.width - 200, 85, 10, 10);
+                ctx.fillStyle = '#eee'; ctx.fillText('Linear [A·n]', canvas.width - 182, 94);
+
+            } else {
+                const laneColor = activeMode === 'quadratic' ? '#ff00ff' : (activeMode === 'linear' ? '#00ffcc' : '#ffaa00');
+                
+                visibleData.forEach(d => {
+                    if (d.isPrime) {
+                        let x = originX + ((d.n - viewMinN) / rangeN) * w;
+                        let resVal = activeMode === 'quadratic' ? d.resQuad : (activeMode === 'linear' ? d.resLinear : d.resHarmonic);
+                        let y = originY - (resVal / (globalMaxRes || 1)) * (h / 2);
+                        
+                        if (y >= 10 && y <= canvas.height - 10) {
+                            ctx.fillStyle = laneColor;
+                            ctx.globalAlpha = 0.9;
+                            ctx.fillRect(x - 1, y - 1, 2.5, 2.5);
+                            ctx.globalAlpha = 1.0;
+                        }
+                    }
+                });
+            }
+
+            ctx.fillStyle = '#aaa';
+            ctx.font = '11px monospace';
+            ctx.fillText(`Residual Scale: ±${globalMaxRes.toFixed(1)} Ticks`, 60, 40);
+        }
+
+        canvas.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            if (masterData.length === 0) return;
+
+            const zoomFactor = e.deltaY < 0 ? 0.85 : 1.15;
+            const range = viewMaxN - viewMinN;
+            const mouseX = e.offsetX;
+            const originX = 60;
+            const w = canvas.width - 80;
+
+            const mouseN = viewMinN + ((mouseX - originX) / w) * range;
+            let newRange = range * zoomFactor;
+            if (newRange < 50) newRange = 50;
+
+            viewMinN = mouseN - (mouseN - viewMinN) * (newRange / range);
+            viewMaxN = mouseN + (viewMaxN - mouseN) * (newRange / range);
+
+            const minBound = masterData[0].n;
+            const maxBound = masterData[masterData.length - 1].n;
+            if (viewMinN < minBound) viewMinN = minBound;
+            if (viewMaxN > maxBound) viewMaxN = maxBound;
+
+            redrawCanvas();
+        });
+
+        function resetZoom() {
+            viewMinN = initialMinN;
+            viewMaxN = initialMaxN;
+            redrawCanvas();
+        }
+
+        // Smart Tooltip with Edge Boundary Clamping
+        canvas.addEventListener('mousemove', function(e) {
+            if (masterData.length === 0) return;
+
+            const originX = 60;
+            const w = canvas.width - 80;
+            const mouseX = e.offsetX;
+            const mouseY = e.offsetY;
+
+            if (mouseX < originX || mouseX > originX + w || mouseY < 10 || mouseY > canvas.height - 10) {
+                tooltip.style.display = 'none';
+                redrawCanvas();
+                return;
+            }
+
+            const rangeN = viewMaxN - viewMinN;
+            const hoveredN = Math.round(viewMinN + ((mouseX - originX) / w) * rangeN);
+            const node = masterData.find(d => d.n >= hoveredN);
+            if (!node) return;
+
+            redrawCanvas();
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(mouseX, 10); ctx.lineTo(mouseX, canvas.height - 10);
+            ctx.moveTo(originX, mouseY); ctx.lineTo(originX + w, mouseY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            const activeMode = document.getElementById('baselineModel').value;
+            let resDisplay = activeMode === 'quadratic' ? node.resQuad.toFixed(2) : (activeMode === 'linear' ? node.resLinear.toFixed(2) : node.resHarmonic.toFixed(2));
+            if (activeMode === 'comparative') {
+                resDisplay = `Harmonic:${node.resHarmonic.toFixed(1)} | Quad:${node.resQuad.toFixed(1)} | Linear:${node.resLinear.toFixed(1)}`;
+            }
+
+            tooltip.innerHTML = `
+                <strong>N:</strong> ${node.n}<br>
+                <strong>Status:</strong> <span style="color: ${node.isPrime ? '#00ffcc' : '#888'};">${node.isPrime ? 'PRIME (Resonance)' : 'Composite (Valley)'}</span><br>
+                <strong>W(n) Cost:</strong> ${node.cost} ticks<br>
+                <strong>Divisor Count:</strong> ${node.divisorCount}<br>
+                <strong>Residual:</strong> ${resDisplay}
+            `;
+
+            // Smart Edge Clamping to prevent clipping off screen
+            tooltip.style.display = 'block';
+            let posX = e.pageX + 10;
+            let posY = e.pageY - 25;
+            
+            const tipWidth = 180;
+            const tipHeight = 90;
+            
+            if (posX + tipWidth > window.innerWidth - 20) {
+                posX = e.pageX - tipWidth - 10;
+            }
+            if (posY + tipHeight > window.innerHeight - 20) {
+                posY = e.pageY - tipHeight - 10;
+            }
+
+            tooltip.style.left = posX + 'px';
+            tooltip.style.top = posY + 'px';
+        });
+
+        canvas.addEventListener('mouseleave', function() {
+            tooltip.style.display = 'none';
+            redrawCanvas();
+        });
+
+        // Compact Timestamped CSV Exporter
+        function exportPhenomenonCSV() {
+            if (masterData.length === 0) {
+                alert("No telemetry data to export. Execute a run first.");
+                return;
+            }
+
+            const minN = masterData[0].n;
+            const maxN = masterData[masterData.length - 1].n;
+            
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+            const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0'); // HHmm (24hr, no seconds)
+
+            let csvRows = ["N,Status,W_Cost,Divisor_Count,Harmonic_Residual,Quadratic_Residual,Linear_Residual"];
+
+            masterData.forEach(d => {
+                let status = d.isPrime ? "Prime" : "Composite";
+                csvRows.push(`${d.n},${status},${d.cost},${d.divisorCount},${d.resHarmonic.toFixed(4)},${d.resQuad.toFixed(4)},${d.resLinear.toFixed(4)}`);
+            });
+
+            const csvBlob = new Blob([csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(csvBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `svet_proofline_${minN}_to_${maxN}_${dateStr}_${timeStr}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        clearCanvas();
+    </script>
+</body>
+</html>

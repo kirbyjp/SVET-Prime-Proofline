@@ -1,0 +1,11 @@
+{
+  "version": "0.1-rtoa",
+  "timestamp": "2026-09-11T00:00:00.000Z",
+  "mode": "dense",
+  "run_config": {
+    "range_min": 13000,
+    "range_max": 14000,
+    "csv_export_enabled": false,
+    "diagnostics_visible": true
+  }
+}

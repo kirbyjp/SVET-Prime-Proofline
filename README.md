@@ -4,7 +4,7 @@ subtitle: 'A mathematical proofline engine for deriving the asymptotic structure
 author: "John Kirby"
 date: "September 2026"
 abstract: |
-  We present an empirical and analytic characterization of the SVET prime interrogation work functional, $W_{\text{SVET}}(n)$. By comparing high-resolution residual telemetry against an adjusted harmonic baseline, this study investigates the emergent linear invariant $C_{\text{SVET}} \approx 0.154431$. Utilizing a multi-core asynchronous execution harness spanning horizons up to 10-trillion ($10^{13}$), we demonstrate convergence on the order of $10^{-10}$, tracking the analytic floor of $2\gamma - 1$. These findings establish a scale-invariant framework for analyzing divisor-density interference without complex-plane dependency.
+  We present an empirical and analytic characterization of the SVET prime interrogation work functional, $W_{\text{SVET}}(n)$. By comparing high-resolution residual telemetry against an adjusted harmonic baseline, this study investigates the emergent linear invariant $C_{\text{SVET}} \approx 0.15443133$ at the 10-trillion horizon. Analytically, the SVET harmonic model admits a linear correction floor at $2\gamma - 1 = 0.1544313298\dots$, establishing the theoretical lower bound for the work functional’s linear term. The current empirical constant lies numerically on this floor within present resolution, and future high-altitude interrogations will determine whether any remaining microscopic drift toward the exact analytic value persists.
 keywords: [Asymptotic Analysis, Divisor Sums, Harmonic Baselines, Residual Fields, SVET, Number Theory, RTOA]
 geometry: margin=1in
 fontsize: 11pt
@@ -100,13 +100,7 @@ $$
 
 ## Validator Evolution & The RTOA Integration Narrative
 
-Early versions of the SVET validator (v0.1–v0.25) were built around a classical assumption: if SVET’s work functional behaves like the classical divisor‑sum model, its linear coefficient should converge to the Euler‑Mascheroni constant $\gamma \approx 0.57721566$. 
-
-This assumption worked perfectly **for the classical model**, but it proved **incorrect for SVET**. Beginning in v0.26, SVET’s work functional was updated to reflect the actual probe‑cost loop used by the engine. Once the validator measured SVET’s true execution physics, the fitted linear term stabilized at:
-
-$$
-C_{\text{SVET}} \approx 0.15444
-$$
+The classical assumption $B = \gamma$ proved incorrect for SVET. Once the validator was updated to measure SVET’s true probe-cost loop, the fitted linear term began drifting downward from its early low-altitude value near 0.155. This drift reflects the diminishing influence of the fractional-part Dirichlet field as the harmonic term $n\ln n$ dominates at large horizons. The SVET work functional’s analytic structure imposes a strict lower bound on the linear term at $2\gamma - 1 = 0.1544313298\dots$. Our empirical measurements at the 10-trillion horizon yield $C_{\text{SVET}} \approx 0.15443133$, numerically indistinguishable from this analytic floor to eight decimal places. Further interrogation at higher altitudes will determine whether the constant continues to drift toward the exact analytic limit or whether it has reached its asymptotic equilibrium.
 
 ---
 
@@ -115,7 +109,7 @@ $$
 To execute parallelized divisor field spectroscopy up to 13-digit horizons without inducing user-interface thread freezes, context-switching stalls, or thermal bottlenecks, the framework implements a decoupled execution engine based on the Real-Time Optimization Architecture (RTOA) and the principles established in the [Krapivin-Yao Hybrid Hash framework](https://github.com/kirbyjp/Krapivin-Yao-Hybrid-Hash). The harness separates the high-velocity arithmetic compute layer from the Document Object Model (DOM) rendering pipeline through three distinct microarchitectural mechanisms:
 
 ### Off-Main-Thread Asynchronous Swarming
-The compute engine bypasses single-threaded runtime bottlenecks by instantiating an isolated multi-core worker swarm utilizing inline blob worker serialization. In Performance Mode, the host system scales to its maximum logical thread capacity (MAX_WORKERS = 8), completely decoupling the $O(n)$ inner execution loops from the primary browser thread. This UI-isolated parallel execution path guarantees that the user interface remains fluid and responsive to mouse-scrolling events even under a sustained, maximum-capacity background compute load.
+The compute engine bypasses single-threaded runtime bottlenecks by instantiating an isolated multi-core worker swarm utilizing inline blob worker serialization. In Performance Mode, the host system scales to its maximum available logical thread capacity (up to $\text{MAX\_WORKERS} = 8$), completely decoupling the $O(n)$ inner execution loops from the primary browser thread. This UI-isolated parallel execution path guarantees that the user interface remains fluid and responsive to mouse-scrolling events even under a sustained, maximum-capacity background compute load.
 
 ### Load-Balanced Interleaved Stride Layout
 Traditional contiguous range partitioning across multi-threaded arrays creates severe tail-end latency bottlenecks, as threads assigned to low divisor ranges are starved by intensive division loops while threads assigned to high divisor ranges idle. To achieve hardware-level load balance, the RTOA v0.2 engine implements an Interleaved Stride Layout. The absolute divisor range $d \in [2, n-1]$ is distributed symmetrically across all active worker threads using a modular step function ($d = 2 + \text{workerId}, 2 + \text{workerId} + \text{stride}, 2 + \text{workerId} + 2\cdot\text{stride} \dots$). This design maps the natural density gradient of the divisor field evenly across all available logical processor cores, maximizing pipeline residency and optimizing hardware prefetch efficiency.

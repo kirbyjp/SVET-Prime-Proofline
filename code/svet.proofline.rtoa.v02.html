@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SVET · Prime Proofline + RTOA · v0.2</title>
+<style>
+:root{
+  --bg:#080b0f;--surf:#0d1117;--border:#1e2a38;--border2:#243040;
+  --text:#c9d1d9;--dim:#6e7f92;--accent:#00d4aa;--amber:#f0a500;
+  --red:#ff4455;--green:#00c87a;--yellow:#f0c040;
+  --prime:#00d4aa;--comp:#ff1e6e;
+  --mono:'JetBrains Mono','Fira Mono','Consolas',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.6;padding:22px 26px;}
+
+.header{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:20px;}
+.header h1{font-size:15px;letter-spacing:.08em;color:var(--accent);font-weight:700;}
+.header .sub{margin-top:4px;font-size:11px;color:var(--dim);}
+
+.panel{background:var(--surf);border:1px solid var(--border);padding:15px 17px;margin-bottom:16px;}
+.plabel{font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:11px;border-bottom:1px solid var(--border);padding-bottom:5px;}
+
+.crow{display:flex;align-items:center;flex-wrap:wrap;gap:12px;}
+.cg{display:flex;align-items:center;gap:6px;}
+.cg label{color:var(--dim);font-size:11px;}
+
+input[type="number"],input[type="text"]{background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:13px;padding:5px 8px;}
+input[type="number"]:focus,input[type="text"]:focus{outline:1px solid var(--accent);}
+input[type="checkbox"]{accent-color:var(--accent);}
+input[type="number"].wide{width:100px;}
+input[type="text"].samples{width:360px;}
+
+.btn{font-family:var(--mono);font-size:12px;padding:7px 15px;border:1px solid var(--border2);cursor:pointer;letter-spacing:.04em;transition:background .15s,color .15s;}
+.btn-run{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent);}
+.btn-run:hover{background:#00ffcc;}
+.btn-run:disabled{background:#1a4a40;color:#3a7a70;cursor:not-allowed;}
+.btn-sec{background:transparent;color:var(--text);}
+.btn-sec:hover{background:var(--border2);color:var(--accent);}
+.btn-amb{background:transparent;color:var(--amber);border-color:var(--amber);}
+.btn-amb:hover{background:var(--amber);color:#000;}
+.btn-perf{background:transparent;color:var(--accent);border-color:var(--accent);font-weight:700;}
+.btn-legacy{background:transparent;color:var(--dim);border-color:var(--border2);}
+
+.truth-row{display:flex;gap:22px;margin-top:11px;padding-top:9px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.ti{display:flex;flex-direction:column;gap:2px;}
+.ti .tl{font-size:10px;color:var(--dim);letter-spacing:.08em;}
+.ti .tv{font-size:14px;color:var(--amber);font-weight:700;}
+.ti .tn{font-size:10px;color:var(--dim);}
+
+.prog-wrap{width:100%;background:#0d1117;height:22px;border:1px solid var(--border2);position:relative;margin:10px 0;}
+#progBar{height:100%;background:var(--accent);width:0%;transition:width .1s;}
+#progTxt{position:absolute;width:100%;text-align:center;color:#000;font-weight:700;top:3px;font-size:11px;}
+
+canvas{border:1px solid var(--border);background:var(--bg);display:block;max-width:100%;}
+.legend{display:flex;gap:16px;margin-top:7px;font-size:11px;color:var(--dim);flex-wrap:wrap;}
+.li{display:flex;align-items:center;gap:5px;}
+.ld{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* Canvas controls row */
+.canvas-controls{display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
+.slider-group{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);}
+input[type="range"]{vertical-align:middle;}
+
+/* Badges */
+.badge-row{display:flex;gap:11px;flex-wrap:wrap;align-items:center;margin-bottom:13px;}
+.badge{padding:6px 13px;font-size:11px;letter-spacing:.05em;border:1px solid;display:flex;flex-direction:column;gap:2px;min-width:140px;}
+.bsl{font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;}
+.bv{font-size:13px;font-weight:700;}
+.bn{font-size:10px;}
+.bg{border-color:var(--green);} .bg .bv{color:var(--green);}
+.by{border-color:var(--yellow);} .by .bv{color:var(--yellow);}
+.br{border-color:var(--red);}   .br .bv{color:var(--red);}
+.bx{border-color:var(--border2);} .bx .bv{color:var(--dim);}
+.agg{padding:8px 20px;font-size:14px;font-weight:700;letter-spacing:.12em;border:2px solid;text-transform:uppercase;}
+.agg-g{border-color:var(--green);color:var(--green);}
+.agg-y{border-color:var(--yellow);color:var(--yellow);}
+.agg-r{border-color:var(--red);color:var(--red);}
+.agg-x{border-color:var(--border2);color:var(--dim);}
+
+/* Telemetry table */
+.telem-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+.telem-table th{background:var(--bg);color:var(--dim);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border:1px solid var(--border);text-align:left;}
+.telem-table td{padding:6px 10px;border:1px solid var(--border);font-size:12px;}
+.telem-table tr:hover td{background:#111820;}
+.tg{color:var(--green);} .ty{color:var(--yellow);} .tr{color:var(--red);}
+
+/* Engine health panel */
+.engine-panel{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);margin-bottom:10px;}
+.thermo{display:flex;align-items:center;gap:8px;font-size:11px;}
+.thermo-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;transition:background .3s;}
+.thermo-label{color:var(--dim);font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+.thermo-val{font-size:13px;font-weight:700;}
+.worker-bars{display:flex;gap:4px;align-items:flex-end;height:28px;}
+.wbar-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.wbar-bg{width:18px;height:20px;background:#131c26;border:1px solid var(--border);position:relative;overflow:hidden;}
+.wbar-fill{position:absolute;bottom:0;width:100%;background:var(--accent);height:0%;transition:height .3s;}
+.wbar-id{font-size:8px;color:var(--dim);text-align:center;}
+.engine-stats{font-size:11px;color:var(--dim);display:flex;flex-direction:column;gap:3px;}
+.engine-stats span{color:var(--text);}
+
+/* Dual col */
+.dual{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+textarea{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:9px;resize:vertical;min-height:160px;line-height:1.5;}
+textarea:focus{outline:1px solid var(--accent);}
+.preview{width:100%;background:var(--bg);border:1px solid var(--border2);color:#6a7f90;font-family:var(--mono);font-size:11px;padding:9px;min-height:160px;white-space:pre;overflow:hidden;user-select:all;line-height:1.5;}
+.pact{display:flex;gap:7px;margin-top:7px;flex-wrap:wrap;align-items:center;}
+
+#tooltip{position:fixed;display:none;background:rgba(8,11,15,.97);border:1px solid var(--accent);padding:8px 12px;font-size:11px;pointer-events:none;z-index:1000;box-shadow:0 4px 16px rgba(0,0,0,.6);line-height:1.7;min-width:210px;}
+#tooltip strong{color:var(--accent);}
+
+.idle{color:var(--dim);font-size:11px;font-style:italic;}
+.spinner{color:var(--amber);font-size:11px;display:none;}
+
+.mode-tabs{display:flex;gap:0;margin-bottom:14px;}
+.mtab{padding:7px 18px;font-family:var(--mono);font-size:12px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--dim);letter-spacing:.04em;}
+.mtab.active{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent);}
+.mtab:hover:not(.active){background:var(--border2);color:var(--accent);}
+
+.worker-log{background:var(--bg);border:1px solid var(--border);padding:8px 10px;font-size:10px;color:#3a5a70;height:72px;overflow-y:auto;margin-top:8px;line-height:1.5;}
+
+/* Perf mode indicator */
+.perf-badge{display:inline-block;padding:3px 10px;font-size:10px;letter-spacing:.1em;border:1px solid;text-transform:uppercase;font-weight:700;}
+.perf-badge.perf{border-color:var(--accent);color:var(--accent);}
+.perf-badge.legacy{border-color:var(--dim);color:var(--dim);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SVET · PRIME PROOFLINE VALIDATOR + RTOA ENGINE · v0.2</h1>
+  <div class="sub">SVET probe-cost W(n) · Harmonic baseline · B_TARGET ≈ 0.155 · RTOA 8-core swarm · Interleaved stride · High-altitude sparse to 10M+</div>
+</div>
+
+<!-- ── CONTROL PANEL ─────────────────────────────────────────── -->
+<div class="panel">
+  <div class="plabel">Control Panel</div>
+
+  <!-- Run mode tabs -->
+  <div class="mode-tabs">
+    <button class="mtab active" id="tabDense"  onclick="setRunMode('dense')">Dense Range</button>
+    <button class="mtab"        id="tabSparse" onclick="setRunMode('sparse')">Sparse Sample (High Altitude)</button>
+  </div>
+
+  <!-- Thread mode + shared controls -->
+  <div class="crow" style="margin-bottom:12px;">
+    <div class="cg">
+      <span style="font-size:11px;color:var(--dim);">Thread Mode:</span>
+      <button id="perfToggle" class="btn btn-perf" onclick="togglePerfMode()" style="padding:5px 14px;font-size:11px;">⚡ PERFORMANCE (8 workers)</button>
+    </div>
+    <span id="perfBadge" class="perf-badge perf">PERFORMANCE MODE · 8 CORES</span>
+    <div class="cg"><label><input type="checkbox" id="diagVis" checked onchange="syncInputJson()"> Show diagnostics</label></div>
+    <div class="cg"><label><input type="checkbox" id="csvEn" onchange="syncInputJson()"> Generate CSV</label></div>
+  </div>
+
+  <!-- Dense controls -->
+  <div id="denseControls" class="crow">
+    <div class="cg"><label>Range min</label><input type="number" id="rMin" class="wide" value="10000" min="2" oninput="syncInputJson()"></div>
+    <div class="cg"><label>Range max</label><input type="number" id="rMax" class="wide" value="11000" min="10" oninput="syncInputJson()"></div>
+    <button class="btn btn-run" id="runBtn" onclick="startDenseRun()">Execute Run</button>
+    <button class="btn btn-sec" onclick="resetZoom()">Reset Zoom</button>
+    <span class="spinner" id="spinner">⚙ Computing…</span>
+  </div>
+
+  <!-- Sparse controls -->
+  <div id="sparseControls" style="display:none;" class="crow">
+    <div class="cg"><label>Sample points (comma-separated n):</label></div>
+    <input type="text" class="samples" id="samplePts" value="100000,200000,500000,1000000,2000000,5000000,10000000" oninput="syncInputJson()">
+    <button class="btn btn-run" id="runBtnSp" onclick="startSparseRun()">Execute Sparse Run</button>
+    <span class="spinner" id="spinnerSp">⚙ Workers running…</span>
+  </div>
+
+  <!-- Truth targets -->
+  <div class="truth-row">
+    <div class="ti">
+      <span class="tl">TRUTH TARGET — A</span>
+      <span class="tv">A = 1.000000</span>
+      <span class="tn">locked · harmonic coefficient</span>
+    </div>
+    <div class="ti">
+      <span class="tl">TRUTH TARGET — B (SVET constant)</span>
+      <span class="tv">B = C_SVET ≈ 0.155000</span>
+      <span class="tn">locked · empirical SVET probe-cost limit</span>
+    </div>
+    <div class="ti">
+      <span class="tl">CLASSICAL REFERENCE — B</span>
+      <span class="tv" style="color:var(--dim)">γ ≈ 0.577216</span>
+      <span class="tn">reference only · not driving verdicts</span>
+    </div>
+    <div class="ti">
+      <span class="tl">W(n) ENGINE</span>
+      <span class="tv" style="color:var(--accent);font-size:12px;">SVET probe-cost (v0.26 loop)</span>
+      <span class="tn">not classical divisor sum</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── ENGINE HEALTH ──────────────────────────────────────────── -->
+<div class="panel">
+  <div class="plabel">Engine Health · Friction Thermometer</div>
+  <div class="engine-panel">
+    <!-- Thermometer -->
+    <div class="thermo">
+      <div class="thermo-dot" id="thermoDot" style="background:var(--border2);"></div>
+      <div>
+        <div class="thermo-label">ATM Velocity</div>
+        <div class="thermo-val" id="thermoVal">—</div>
+      </div>
+    </div>
+    <!-- Worker bars -->
+    <div>
+      <div style="font-size:9px;color:var(--dim);letter-spacing:.1em;margin-bottom:4px;">WORKER CONTRIBUTION</div>
+      <div class="worker-bars" id="workerBars"></div>
+    </div>
+    <!-- Stats -->
+    <div class="engine-stats">
+      <div>Total Ops: <span id="engOps">—</span></div>
+      <div>Wall Time: <span id="engTime">—</span></div>
+      <div>Throughput: <span id="engThru">—</span></div>
+    </div>
+  </div>
+  <div class="worker-log" id="wLog">RTOA harness ready.</div>
+</div>
+
+<!-- ── PROGRESS ───────────────────────────────────────────────── -->
+<div class="prog-wrap"><div id="progBar"></div><div id="progTxt">READY</div></div>
+
+<!-- ── CANVAS ────────────────────────────────────────────────── -->
+<div class="panel" style="padding-bottom:10px;">
+  <div class="plabel">Residual Field · Δ_W(n) = W_SVET(n) − [n·ln(n) + B_fitted·n] · drag to pan · scroll to zoom</div>
+  <div style="position:relative;display:inline-block;width:100%;">
+    <canvas id="chart" width="1450" height="500"
+      style="cursor:crosshair;"
+      onmousedown="onCanvasMouseDown(event)"
+      onmousemove="onCanvasMouseMove(event)"
+      onmouseup="onCanvasMouseUp(event)"
+      onmouseleave="onCanvasMouseLeave(event)">
+    </canvas>
+  </div>
+  <div class="legend">
+    <div class="li"><div class="ld" style="background:var(--prime)"></div>Prime (resonance isolate)</div>
+    <div class="li"><div class="ld" style="background:var(--comp)"></div>Composite (collapse valley)</div>
+    <div class="li"><div class="ld" style="background:var(--amber);border-radius:0;width:18px;height:2px;"></div>Zero baseline</div>
+    <div class="li"><div class="ld" style="background:var(--yellow);border-radius:0;width:18px;height:1px;"></div>±σ bound</div>
+  </div>
+  <!-- Canvas controls -->
+  <div class="canvas-controls">
+    <div class="slider-group">
+      <span>Composite Intensity</span>
+      <input type="range" id="compOpacity" min="0" max="1" step="0.01" value="0.6"
+        style="width:130px;accent-color:#ff1e6e;"
+        oninput="document.getElementById('compOpVal').textContent=parseFloat(this.value).toFixed(2);if(masterData.length&&runMode==='dense')drawCanvas();">
+      <span id="compOpVal" style="color:#ff1e6e;min-width:32px;">0.60</span>
+    </div>
+    <div class="slider-group">
+      <span>Composite Dot Size</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" id="compLargeDot"
+          onchange="if(masterData.length&&runMode==='dense')drawCanvas();">
+        <span id="compDotLabel" style="color:var(--dim);">Small (1.2px)</span>
+      </label>
+    </div>
+    <div class="slider-group">
+      <span style="color:var(--dim);">Pan: drag canvas left/right</span>
+    </div>
+  </div>
+</div>
+<div id="tooltip"></div>
+
+<!-- ── DIAGNOSTICS ───────────────────────────────────────────── -->
+<div class="panel" id="diagPanel">
+  <div class="plabel">Proofline Diagnostics</div>
+  <div id="diagContent"><div class="idle">No run yet. Execute a run to generate diagnostics.</div></div>
+</div>
+
+<!-- ── JSON I/O ──────────────────────────────────────────────── -->
+<div class="dual">
+  <div class="panel">
+    <div class="plabel">JSON Input — Live Control Mirror · Paste &amp; Load · or edit directly</div>
+    <textarea id="jsonIn" placeholder="Control state mirrors here live. Paste a saved snapshot and click Load State to restore."></textarea>
+    <div class="pact">
+      <button class="btn btn-sec" onclick="loadJson()">Load State</button>
+      <button class="btn btn-sec" onclick="document.getElementById('jsonIn').value='';syncInputJson()">Clear</button>
+      <span id="jsonLoadSt" style="font-size:11px;color:var(--dim);"></span>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="plabel">JSON Output — Proof Artifact (read-only · select-all to copy)</div>
+    <div class="preview" id="jsonOut">No output yet.</div>
+    <div class="pact">
+      <button class="btn btn-sec" onclick="copyJson()">Copy JSON</button>
+      <button class="btn btn-amb" onclick="dlJson()">Download JSON</button>
+      <span id="jsonCpSt" style="font-size:11px;color:var(--dim);"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── CSV ───────────────────────────────────────────────────── -->
+<div class="panel" id="csvPanel" style="display:none;">
+  <div class="plabel">CSV Preview — First 20 · Last 20</div>
+  <div class="preview" id="csvPrev" style="min-height:100px;">No CSV data.</div>
+  <div class="pact">
+    <button class="btn btn-amb" onclick="dlCsv()">Download Full CSV</button>
+    <span id="csvCount" style="font-size:11px;color:var(--dim);"></span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DENSE WORKER — SVET probe-cost, processes a chunk of n values
+════════════════════════════════════════════════════════════════ -->
+<script id="denseWorkerSrc" type="text/plain">
+self.onmessage = function(e) {
+  var chunkStart = e.data.chunkStart;
+  var chunkEnd   = e.data.chunkEnd;
+  var workerId   = e.data.workerId;
+
+  function isPrime(n) {
+    if (n < 2) return false;
+    if (n === 2) return true;
+    if (n % 2 === 0) return false;
+    for (var i = 3; i * i <= n; i += 2) if (n % i === 0) return false;
+    return true;
+  }
+
+  var results = [];
+  var totalIter = 0;
+  var PING = 300;
+
+  for (var n = chunkStart; n <= chunkEnd; n++) {
+    var cost = 0;
+    for (var d = 2; d < n; d++) {
+      cost += 1 + Math.floor(n / d);
+      totalIter++;
+    }
+    var ip = isPrime(n);
+    var classBase = n * Math.log(n) + 0.5772156649015329 * n;
+    results.push({ n: n, wn: cost, isPrime: ip, classBase: classBase });
+
+    if ((n - chunkStart) % PING === 0) {
+      self.postMessage({ type: 'progress', workerId: workerId, n: n });
+    }
+  }
+
+  self.postMessage({ type: 'done', workerId: workerId, results: results, iterations: totalIter });
+};
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SPARSE WORKER — interleaved stride across divisor range for single n
+     Each worker handles d = strideOffset, strideOffset+stride, strideOffset+2*stride, ...
+════════════════════════════════════════════════════════════════ -->
+<script id="sparseWorkerSrc" type="text/plain">
+self.onmessage = function(e) {
+  var n            = e.data.n;
+  var workerId     = e.data.workerId;
+  var stride       = e.data.stride;       // total number of workers
+  var strideOffset = e.data.strideOffset; // this worker's starting d offset (2 + workerId)
+  var isSingleWorker = e.data.isSingleWorker || false;
+
+  var partialCost = 0;
+  var totalIter   = 0;
+  var dStart      = 2 + strideOffset;
+  var PING_INTERVAL = Math.max(1, Math.floor((n - 2) / (stride * 40)));
+  var pingCount = 0;
+
+  for (var d = dStart; d < n; d += stride) {
+    partialCost += 1 + Math.floor(n / d);
+    totalIter++;
+    pingCount++;
+    if (pingCount >= PING_INTERVAL) {
+      pingCount = 0;
+      // estimate overall progress based on this worker's position
+      var pct = (d - dStart) / Math.max(1, n - dStart);
+      self.postMessage({ type: 'progress', workerId: workerId, n: n, pct: Math.min(pct, 1.0), iterSoFar: totalIter });
+    }
+  }
+
+  self.postMessage({ type: 'done', workerId: workerId, n: n, partialCost: partialCost, iterations: totalIter });
+};
+</script>
+
+<script>
+'use strict';
+
+// ── Constants ──────────────────────────────────────────────────
+const GAMMA    = 0.5772156649015329;
+const A_TARGET = 1.0;
+const B_TARGET = 0.155;
+const VERSION  = '0.2-rtoa';
+
+const TOL_A_G=0.005,TOL_A_Y=0.02;
+const TOL_B_G=0.005,TOL_B_Y=0.02;
+const TOL_R_G=50,TOL_R_Y=200;
+const TOL_P_G=1.0,TOL_P_Y=0.995;
+
+// Friction thermometer thresholds (Giga-ops/sec)
+const THERMO_GREEN  = 0.5;  // above this = green (fast/sparse field)
+const THERMO_YELLOW = 0.1;  // above this = yellow (normal)
+                             // below      = red (dense friction)
+
+// ── State ──────────────────────────────────────────────────────
+let perfMode    = true;   // true=8 workers, false=4 workers
+let runMode     = 'dense';
+let masterData  = [];
+let globalMaxRes= 1;
+let viewMinN=10000,viewMaxN=11000;
+let initMinN=10000,initMaxN=11000;
+let lastSnap    = null;
+let fullCsvRows = [];
+let sparseResults=[];
+
+// Canvas pan state
+let isDragging  = false;
+let dragStartX  = 0;
+let dragStartViewMin = 0;
+let dragStartViewMax = 0;
+
+// Engine health
+let runStartTime= 0;
+let totalIterations=0;
+let workerIterations=[];// per-worker iteration counts
+let workerAllocations=[];// per-worker expected share (0-1)
+
+const canvas  = document.getElementById('chart');
+const ctx     = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+// ── Helpers ───────────────────────────────────────────────────
+function maxWorkers(){ return perfMode ? 8 : 4; }
+function p2(n){ return String(n).padStart(2,'0'); }
+function fmtTS(){
+  const d=new Date();
+  return `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}.${p2(d.getHours())}${p2(d.getMinutes())}`;
+}
+function wlog(msg){
+  const l=document.getElementById('wLog');
+  const t=new Date().toLocaleTimeString('en-US',{hour12:false});
+  l.textContent+=`[${t}] ${msg}\n`;
+  l.scrollTop=l.scrollHeight;
+}
+function setProgress(pct,msg){
+  document.getElementById('progBar').style.width=Math.min(100,pct)+'%';
+  document.getElementById('progTxt').textContent=msg;
+}
+
+// ── Friction thermometer ──────────────────────────────────────
+function updateThermo(itersSinceLastPing, msSinceLastPing){
+  const gops = itersSinceLastPing / Math.max(1, msSinceLastPing) / 1e6; // Giga-ops/sec
+  const dot   = document.getElementById('thermoDot');
+  const val   = document.getElementById('thermoVal');
+  let col, label;
+  if(gops >= THERMO_GREEN){
+    col='var(--green)'; label='HIGH · '+gops.toFixed(2)+' GOps/s';
+  } else if(gops >= THERMO_YELLOW){
+    col='var(--yellow)'; label='STEADY · '+gops.toFixed(2)+' GOps/s';
+  } else {
+    col='var(--red)'; label='FRICTION · '+gops.toFixed(3)+' GOps/s';
+  }
+  dot.style.background=col;
+  val.style.color=col;
+  val.textContent=label;
+}
+
+function finalThermo(totalIter, elapsedMs){
+  const gops=totalIter/Math.max(1,elapsedMs)/1e6;
+  const dot=document.getElementById('thermoDot');
+  const val=document.getElementById('thermoVal');
+  let col= gops>=THERMO_GREEN?'var(--green)':gops>=THERMO_YELLOW?'var(--yellow)':'var(--red)';
+  dot.style.background=col; val.style.color=col;
+  val.textContent='FINAL · '+gops.toFixed(3)+' GOps/s';
+  document.getElementById('engOps').textContent=totalIter.toLocaleString()+' iterations';
+  document.getElementById('engTime').textContent=elapsedMs.toFixed(0)+' ms';
+  document.getElementById('engThru').textContent=gops.toFixed(3)+' GOps/s';
+}
+
+// ── Worker bars ───────────────────────────────────────────────
+function initWorkerBars(numWorkers, allocations){
+  workerIterations=new Array(numWorkers).fill(0);
+  workerAllocations=allocations;
+  const container=document.getElementById('workerBars');
+  container.innerHTML='';
+  for(let i=0;i<numWorkers;i++){
+    const wrap=document.createElement('div'); wrap.className='wbar-wrap';
+    const bg=document.createElement('div'); bg.className='wbar-bg';
+    const fill=document.createElement('div'); fill.className='wbar-fill'; fill.id=`wbar${i}`;
+    bg.appendChild(fill); wrap.appendChild(bg);
+    const lbl=document.createElement('div'); lbl.className='wbar-id'; lbl.textContent=`W${i}`;
+    wrap.appendChild(lbl); container.appendChild(wrap);
+  }
+}
+
+function fillWorkerBar(workerId, iterations, expectedIterations){
+  const fill=document.getElementById(`wbar${workerId}`);
+  if(!fill) return;
+  const pct=expectedIterations>0?Math.min(100,(iterations/expectedIterations)*100):100;
+  fill.style.height=pct+'%';
+  fill.style.background='var(--green)';
+}
+
+// ── Performance mode toggle ───────────────────────────────────
+function togglePerfMode(){
+  perfMode=!perfMode;
+  const btn=document.getElementById('perfToggle');
+  const badge=document.getElementById('perfBadge');
+  if(perfMode){
+    btn.textContent='⚡ PERFORMANCE (8 workers)';
+    btn.className='btn btn-perf';
+    badge.textContent='PERFORMANCE MODE · 8 CORES';
+    badge.className='perf-badge perf';
+  } else {
+    btn.textContent='🔋 LEGACY (4 workers)';
+    btn.className='btn btn-legacy';
+    badge.textContent='LEGACY MODE · 4 CORES';
+    badge.className='perf-badge legacy';
+  }
+  syncInputJson();
+}
+
+// ── Run mode (dense/sparse) ───────────────────────────────────
+function setRunMode(m){
+  runMode=m;
+  document.getElementById('denseControls').style.display=m==='dense'?'':'none';
+  document.getElementById('sparseControls').style.display=m==='sparse'?'':'none';
+  document.getElementById('tabDense').className='mtab'+(m==='dense'?' active':'');
+  document.getElementById('tabSparse').className='mtab'+(m==='sparse'?' active':'');
+  syncInputJson();
+}
+
+// ── JSON input live mirror ────────────────────────────────────
+function buildCurrentConfig(){
+  const m=runMode;
+  const cfg={
+    range_min:      parseInt(document.getElementById('rMin').value)||10000,
+    range_max:      parseInt(document.getElementById('rMax').value)||11000,
+    csv_export_enabled: document.getElementById('csvEn').checked,
+    diagnostics_visible: document.getElementById('diagVis').checked,
+    performance_mode: perfMode
+  };
+  if(m==='sparse'){
+    cfg.sample_points=document.getElementById('samplePts').value
+      .split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=2);
+  }
+  return {
+    version: VERSION,
+    timestamp: new Date().toISOString(),
+    mode: m,
+    run_config: cfg
+  };
+}
+
+function syncInputJson(){
+  document.getElementById('jsonIn').value=JSON.stringify(buildCurrentConfig(),null,2);
+}
+
+// ── Regression ────────────────────────────────────────────────
+function fitHarmonic(data){
+  let S11=0,S12=0,S22=0,T1=0,T2=0;
+  data.forEach(d=>{
+    const x1=d.n*Math.log(d.n), x2=d.n;
+    S11+=x1*x1;S12+=x1*x2;S22+=x2*x2;T1+=d.wn*x1;T2+=d.wn*x2;
+  });
+  const det=S11*S22-S12*S12;
+  if(Math.abs(det)<1e-8) return {A:A_TARGET,B:B_TARGET};
+  return {A:(T1*S22-T2*S12)/det,B:(S11*T2-T1*S12)/det};
+}
+
+// ── Verdict helpers ───────────────────────────────────────────
+function judgeCoeff(v,t,g,y){const d=Math.abs(v-t);return d<=g?'green':d<=y?'yellow':'red';}
+function judgeRes(r){return r<=TOL_R_G?'green':r<=TOL_R_Y?'yellow':'red';}
+function judgePrime(a){return a>=TOL_P_G?'green':a>=TOL_P_Y?'yellow':'red';}
+function aggVerdict(vs){return vs.includes('red')?'red':vs.includes('yellow')?'yellow':'green';}
+function vcls(v){return v==='green'?'bg':v==='yellow'?'by':v==='red'?'br':'bx';}
+function acls(v){return v==='green'?'agg-g':v==='yellow'?'agg-y':v==='red'?'agg-r':'agg-x';}
+function fmt6(d){return (d>=0?'+':'')+d.toFixed(6);}
+function dir(d){return d>0?'▲':d<0?'▼':'—';}
+
+// ── Worker blob factory ───────────────────────────────────────
+function makeBlob(id){
+  return URL.createObjectURL(new Blob([document.getElementById(id).textContent],{type:'text/javascript'}));
+}
+
+// ══════════════════════════════════════════════════════════════
+// DENSE RUN
+// ══════════════════════════════════════════════════════════════
+async function startDenseRun(){
+  const minN=parseInt(document.getElementById('rMin').value);
+  const maxN=parseInt(document.getElementById('rMax').value);
+  if(isNaN(minN)||isNaN(maxN)||minN<2||maxN<=minN){alert('Invalid range.');return;}
+  const csvEn=document.getElementById('csvEn').checked;
+  const diagVis=document.getElementById('diagVis').checked;
+  const nW=maxWorkers();
+
+  document.getElementById('runBtn').disabled=true;
+  document.getElementById('spinner').style.display='inline';
+  document.getElementById('jsonOut').textContent='Computing…';
+  document.getElementById('diagContent').innerHTML='<div class="idle">Running…</div>';
+  setProgress(0,'Initialising '+nW+' workers…');
+
+  masterData=[];fullCsvRows=[];sparseResults=[];
+  viewMinN=minN;viewMaxN=maxN;initMinN=minN;initMaxN=maxN;
+
+  const total=maxN-minN+1;
+  // chunk sizing: cap at ~8000 per chunk for L2 friendliness
+  const chunkSize=Math.min(Math.ceil(total/nW),8000);
+  const chunks=[];
+  for(let s=minN;s<=maxN;s+=chunkSize){
+    chunks.push({start:s,end:Math.min(s+chunkSize-1,maxN)});
+  }
+
+  // Allocations for worker bars: each chunk is equal n-span
+  const alloc=chunks.map(c=>(c.end-c.start+1)/total);
+  initWorkerBars(Math.min(nW,chunks.length),alloc);
+
+  const blobUrl=makeBlob('denseWorkerSrc');
+  runStartTime=performance.now();
+  totalIterations=0;
+  let allResults=[];
+  let lastPingTime=runStartTime;
+  let lastPingIter=0;
+
+  wlog(`Dense: [${minN}→${maxN}] · ${chunks.length} chunks · ${nW} workers · chunk=${chunkSize}`);
+
+  await runQueue(blobUrl, chunks, nW,
+    // onProgress
+    (msg)=>{
+      const now=performance.now();
+      const dt=now-lastPingTime;
+      if(dt>200){
+        const di=totalIterations-lastPingIter;
+        updateThermo(di,dt);
+        lastPingTime=now;lastPingIter=totalIterations;
+      }
+      const pct=(allResults.length/total)*100;
+      setProgress(pct,`Worker ${msg.workerId} · n=${msg.n.toLocaleString()}`);
+    },
+    // onDone
+    (msg,chunkIdx)=>{
+      allResults.push(...msg.results);
+      totalIterations+=msg.iterations||0;
+      // fill worker bar
+      const chunkSpan=chunks[chunkIdx]?chunks[chunkIdx].end-chunks[chunkIdx].start+1:1;
+      const expectedIter=chunkSpan*(chunkSpan/2); // rough estimate
+      fillWorkerBar(chunkIdx%nW, msg.iterations||0, msg.iterations||1);
+      setProgress((allResults.length/total)*100,`Worker ${msg.workerId} done · ${allResults.length.toLocaleString()}/${total.toLocaleString()}`);
+    }
+  );
+
+  URL.revokeObjectURL(blobUrl);
+  allResults.sort((a,b)=>a.n-b.n);
+  masterData=allResults;
+
+  const elapsed=performance.now()-runStartTime;
+  finalThermo(totalIterations,elapsed);
+  finaliseDense(minN,maxN,csvEn,diagVis,elapsed.toFixed(1));
+}
+
+// Generic worker queue: runs chunks with up to maxW concurrent workers
+function runQueue(blobUrl, chunks, maxW, onProgress, onDone){
+  return new Promise(resolve=>{
+    let qi=0,active=0,done=0;
+    const total=chunks.length;
+    function next(){
+      while(active<maxW&&qi<chunks.length){
+        const chunk=chunks[qi];
+        const ci=qi; qi++;active++;
+        const w=new Worker(blobUrl);
+        w.onmessage=e=>{
+          const msg=e.data;
+          if(msg.type==='progress') onProgress(msg);
+          else if(msg.type==='done'){
+            onDone(msg,ci);
+            w.terminate();active--;done++;
+            if(done===total)resolve();
+            else next();
+          }
+        };
+        w.postMessage({chunkStart:chunk.start,chunkEnd:chunk.end,workerId:ci});
+        wlog(`W${ci} → n=[${chunk.start.toLocaleString()}…${chunk.end.toLocaleString()}]`);
+      }
+    }
+    next();
+  });
+}
+
+function finaliseDense(minN,maxN,csvEn,diagVis,elapsed){
+  const reg=fitHarmonic(masterData);
+  globalMaxRes=0;
+  let primeCount=0;
+  masterData.forEach(d=>{
+    d.base=reg.A*d.n*Math.log(d.n)+reg.B*d.n;
+    d.res=d.wn-d.base;
+    if(d.isPrime)primeCount++;
+    globalMaxRes=Math.max(globalMaxRes,Math.abs(d.res));
+  });
+  const vA=judgeCoeff(reg.A,A_TARGET,TOL_A_G,TOL_A_Y);
+  const vB=judgeCoeff(reg.B,B_TARGET,TOL_B_G,TOL_B_Y);
+  const vR=judgeRes(globalMaxRes);
+  const vP=judgePrime(1.0);
+  const vAg=aggVerdict([vA,vB,vR,vP]);
+  const snap=buildDenseSnap({minN,maxN,csvEn,diagVis,reg,globalMaxRes,primeCount,
+    nodeCount:masterData.length,primeAcc:1.0,elapsed,vA,vB,vR,vP,vAg});
+  lastSnap=snap;
+  document.getElementById('jsonOut').textContent=JSON.stringify(snap,null,2);
+  if(diagVis)renderDiagDense(snap,elapsed);
+  buildCsv(snap,csvEn,minN,maxN);
+  drawCanvas();
+  setProgress(100,'COMPLETE · '+elapsed+'ms');
+  document.getElementById('runBtn').disabled=false;
+  document.getElementById('spinner').style.display='none';
+  wlog(`Dense complete · ${masterData.length.toLocaleString()} nodes · ${elapsed}ms`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// SPARSE RUN — interleaved stride across all workers for each point
+// ══════════════════════════════════════════════════════════════
+async function startSparseRun(){
+  const raw=document.getElementById('samplePts').value;
+  const pts=raw.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=2).sort((a,b)=>a-b);
+  if(!pts.length){alert('No valid sample points.');return;}
+  const diagVis=document.getElementById('diagVis').checked;
+  const nW=maxWorkers();
+
+  document.getElementById('runBtnSp').disabled=true;
+  document.getElementById('spinnerSp').style.display='inline';
+  document.getElementById('jsonOut').textContent='Computing sparse samples…';
+  document.getElementById('diagContent').innerHTML='<div class="idle">Sparse run…</div>';
+
+  sparseResults=[];masterData=[];
+  runStartTime=performance.now();
+  totalIterations=0;
+
+  const blobUrl=makeBlob('sparseWorkerSrc');
+  wlog(`Sparse: ${pts.length} points · ${nW}-worker interleaved stride per point`);
+
+  // Init bars: one bar per worker (nW bars, each representing a stride slot)
+  initWorkerBars(nW, new Array(nW).fill(1/nW));
+
+  let pointsDone=0;
+  for(const n of pts){
+    setProgress((pointsDone/pts.length)*100,`Computing n=${n.toLocaleString()} · ${nW}-way interleaved…`);
+    wlog(`Sparse n=${n.toLocaleString()} → ${nW} stride workers`);
+
+    // Reset bar fills for this point
+    for(let i=0;i<nW;i++){
+      const f=document.getElementById(`wbar${i}`);
+      if(f){f.style.height='0%';f.style.background='var(--accent)';}
+    }
+
+    let lastPingTime=performance.now();
+    let lastPingIter=0;
+
+    const partials=await runInterleavedSparse(blobUrl,n,nW,
+      (msg)=>{
+        totalIterations+=msg.iterSoFar||0;
+        const now=performance.now();
+        const dt=now-lastPingTime;
+        if(dt>300){
+          const di=totalIterations-lastPingIter;
+          updateThermo(di,dt);
+          lastPingTime=now;lastPingIter=totalIterations;
+          // update bar for this worker
+          const f=document.getElementById(`wbar${msg.workerId}`);
+          if(f)f.style.height=Math.min(99,Math.round(msg.pct*100))+'%';
+        }
+      },
+      (msg)=>{
+        totalIterations+=msg.iterations||0;
+        fillWorkerBar(msg.workerId, msg.iterations||0, msg.iterations||1);
+      }
+    );
+
+    const wn=partials.reduce((a,b)=>a+b,0);
+    const ip=isPrimeJS(n);
+    sparseResults.push({n,wn,isPrime:ip});
+    pointsDone++;
+    setProgress((pointsDone/pts.length)*100,`n=${n.toLocaleString()} done (${pointsDone}/${pts.length})`);
+    wlog(`n=${n.toLocaleString()} · W=${wn.toLocaleString()} · isPrime=${ip}`);
+  }
+
+  URL.revokeObjectURL(blobUrl);
+
+  const elapsed=performance.now()-runStartTime;
+  finalThermo(totalIterations,elapsed);
+  finaliseSparse(diagVis,elapsed.toFixed(1));
+}
+
+// Run nW interleaved workers for a single n, return array of partial costs
+function runInterleavedSparse(blobUrl,n,nW,onProgress,onDone){
+  return new Promise(resolve=>{
+    const partials=new Array(nW).fill(0);
+    let done=0;
+    for(let i=0;i<nW;i++){
+      const w=new Worker(blobUrl);
+      const wid=i;
+      w.onmessage=e=>{
+        const msg=e.data;
+        if(msg.type==='progress') onProgress(msg);
+        else if(msg.type==='done'){
+          partials[wid]=msg.partialCost;
+          onDone(msg);
+          w.terminate();done++;
+          if(done===nW)resolve(partials);
+        }
+      };
+      w.postMessage({n,workerId:i,stride:nW,strideOffset:i});
+    }
+  });
+}
+
+function isPrimeJS(n){
+  if(n<2)return false;if(n===2)return true;if(n%2===0)return false;
+  for(let i=3;i*i<=n;i+=2)if(n%i===0)return false;
+  return true;
+}
+
+function finaliseSparse(diagVis,elapsed){
+  sparseResults.forEach(r=>{
+    r.Bfitted=(r.wn-r.n*Math.log(r.n))/r.n;
+    r.drift=r.Bfitted-B_TARGET;
+    r.classBase=r.n*Math.log(r.n)+GAMMA*r.n;
+    r.classDiff=r.wn-r.classBase;
+  });
+  const bestB=sparseResults[sparseResults.length-1]?.Bfitted??B_TARGET;
+  const vB=judgeCoeff(bestB,B_TARGET,TOL_B_G,TOL_B_Y);
+  const snap={
+    version:VERSION,timestamp:new Date().toISOString(),mode:'sparse',
+    run_config:{
+      sample_points:sparseResults.map(r=>r.n),
+      diagnostics_visible:diagVis,
+      performance_mode:perfMode
+    },
+    truth_targets:{A:A_TARGET,B_SVET:B_TARGET,B_classical:GAMMA},
+    samples:sparseResults.map(r=>({
+      n:r.n,W_SVET:r.wn,isPrime:r.isPrime,
+      B_fitted:parseFloat(r.Bfitted.toFixed(8)),
+      drift_from_CSVET:parseFloat(r.drift.toFixed(8)),
+      classical_base:parseFloat(r.classBase.toFixed(2)),
+      classical_diff:parseFloat(r.classDiff.toFixed(2))
+    })),
+    B_best_estimate:parseFloat(bestB.toFixed(8)),
+    verdicts:{B_coeff:vB,aggregate:vB},
+    elapsed_ms:parseFloat(elapsed),
+    engine:{total_iterations:totalIterations,workers:maxWorkers(),mode:perfMode?'performance':'legacy'}
+  };
+  lastSnap=snap;
+  document.getElementById('jsonOut').textContent=JSON.stringify(snap,null,2);
+  if(diagVis)renderDiagSparse(snap);
+  drawCanvasSparse();
+  setProgress(100,'SPARSE COMPLETE · '+elapsed+'ms');
+  document.getElementById('runBtnSp').disabled=false;
+  document.getElementById('spinnerSp').style.display='none';
+  wlog(`Sparse complete · ${sparseResults.length} points · ${elapsed}ms`);
+}
+
+// ── Dense snapshot ────────────────────────────────────────────
+function buildDenseSnap({minN,maxN,csvEn,diagVis,reg,globalMaxRes,primeCount,nodeCount,primeAcc,elapsed,vA,vB,vR,vP,vAg}){
+  return {
+    version:VERSION,timestamp:new Date().toISOString(),mode:'dense',
+    run_config:{range_min:minN,range_max:maxN,csv_export_enabled:csvEn,
+      diagnostics_visible:diagVis,performance_mode:perfMode},
+    model_type:'harmonic_svet',
+    truth_targets:{A:A_TARGET,B_SVET:B_TARGET,B_classical_ref:GAMMA},
+    A_fitted:parseFloat(reg.A.toFixed(8)),B_fitted:parseFloat(reg.B.toFixed(8)),
+    A_drift:parseFloat((reg.A-A_TARGET).toFixed(8)),
+    B_drift:parseFloat((reg.B-B_TARGET).toFixed(8)),
+    globalMaxRes:parseFloat(globalMaxRes.toFixed(4)),
+    prime_count:primeCount,node_count:nodeCount,
+    prime_accuracy:parseFloat(primeAcc.toFixed(6)),
+    elapsed_ms:parseFloat(elapsed),
+    engine:{total_iterations:totalIterations,workers:maxWorkers(),mode:perfMode?'performance':'legacy'},
+    verdicts:{A_coeff:vA,B_coeff:vB,residuals:vR,prime_accuracy:vP,aggregate:vAg},
+    tolerance_profile:{A_green:TOL_A_G,A_yellow:TOL_A_Y,B_green:TOL_B_G,B_yellow:TOL_B_Y,
+      sigma_green:TOL_R_G,sigma_yellow:TOL_R_Y,
+      prime_accuracy_green:TOL_P_G,prime_accuracy_yellow:TOL_P_Y}
+  };
+}
+
+// ── Diagnostics ───────────────────────────────────────────────
+function renderDiagDense(snap,elapsed){
+  const {verdicts:v,A_fitted,B_fitted,A_drift,B_drift,globalMaxRes,prime_accuracy,prime_count,node_count}=snap;
+  document.getElementById('diagContent').innerHTML=`
+    <div class="badge-row">
+      <div class="badge ${vcls(v.A_coeff)}">
+        <span class="bsl">A coefficient</span><span class="bv">${v.A_coeff.toUpperCase()}</span>
+        <span class="bn">fitted ${A_fitted.toFixed(6)} · drift ${fmt6(A_drift)} ${dir(A_drift)}</span>
+      </div>
+      <div class="badge ${vcls(v.B_coeff)}">
+        <span class="bsl">B coeff (vs C_SVET≈0.155)</span><span class="bv">${v.B_coeff.toUpperCase()}</span>
+        <span class="bn">fitted ${B_fitted.toFixed(6)} · drift ${fmt6(B_drift)} ${dir(B_drift)}</span>
+      </div>
+      <div class="badge ${vcls(v.residuals)}">
+        <span class="bsl">Residual bound</span><span class="bv">${v.residuals.toUpperCase()}</span>
+        <span class="bn">±${globalMaxRes.toFixed(2)} ticks max</span>
+      </div>
+      <div class="badge ${vcls(v.prime_accuracy)}">
+        <span class="bsl">Prime accuracy</span><span class="bv">${v.prime_accuracy.toUpperCase()}</span>
+        <span class="bn">${(prime_accuracy*100).toFixed(3)}%</span>
+      </div>
+      <div class="agg ${acls(v.aggregate)}">${v.aggregate.toUpperCase()}</div>
+    </div>
+    <table class="telem-table">
+      <tr><th>Metric</th><th>Value</th><th>Target</th><th>Δ</th></tr>
+      <tr><td>Nodes</td><td>${node_count.toLocaleString()}</td><td>—</td><td>—</td></tr>
+      <tr><td>Primes</td><td>${prime_count.toLocaleString()}</td><td>—</td><td>—</td></tr>
+      <tr><td>A fitted</td><td>${A_fitted.toFixed(8)}</td><td>${A_TARGET.toFixed(8)}</td>
+          <td class="${v.A_coeff==='green'?'tg':v.A_coeff==='yellow'?'ty':'tr'}">${fmt6(A_drift)}</td></tr>
+      <tr><td>B fitted (SVET)</td><td>${B_fitted.toFixed(8)}</td><td>${B_TARGET.toFixed(8)}</td>
+          <td class="${v.B_coeff==='green'?'tg':v.B_coeff==='yellow'?'ty':'tr'}">${fmt6(B_drift)}</td></tr>
+      <tr><td>B classical ref (γ)</td><td colspan="3" style="color:var(--dim)">${GAMMA.toFixed(8)} · reference only</td></tr>
+      <tr><td>Max |Δ_W(n)|</td><td>${globalMaxRes.toFixed(4)}</td><td>≤${TOL_R_G}</td>
+          <td class="${v.residuals==='green'?'tg':v.residuals==='yellow'?'ty':'tr'}">${v.residuals}</td></tr>
+      <tr><td>Elapsed</td><td>${elapsed} ms</td><td>—</td><td>—</td></tr>
+      <tr><td>Workers</td><td>${maxWorkers()} (${perfMode?'performance':'legacy'})</td><td>—</td><td>—</td></tr>
+      <tr><td>Total iterations</td><td>${totalIterations.toLocaleString()}</td><td>—</td><td>—</td></tr>
+    </table>`;
+}
+
+function renderDiagSparse(snap){
+  const {verdicts:v,samples,B_best_estimate,elapsed_ms}=snap;
+  const rows=samples.map(s=>{
+    const dc=s.drift_from_CSVET;
+    const cl=Math.abs(dc)<=TOL_B_G?'tg':Math.abs(dc)<=TOL_B_Y?'ty':'tr';
+    return `<tr>
+      <td>${s.n.toLocaleString()}</td>
+      <td>${s.W_SVET.toLocaleString()}</td>
+      <td>${s.isPrime?'<span style="color:var(--prime)">PRIME</span>':'composite'}</td>
+      <td>${s.B_fitted.toFixed(8)}</td>
+      <td class="${cl}">${(dc>=0?'+':'')+dc.toFixed(8)}</td>
+      <td style="color:var(--dim)">${s.classical_diff>=0?'+':''}${s.classical_diff.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('diagContent').innerHTML=`
+    <div class="badge-row">
+      <div class="badge ${vcls(v.B_coeff)}">
+        <span class="bsl">B convergence (best n)</span><span class="bv">${v.B_coeff.toUpperCase()}</span>
+        <span class="bn">B_best=${B_best_estimate.toFixed(6)} · target=${B_TARGET}</span>
+      </div>
+      <div class="agg ${acls(v.aggregate)}">${v.aggregate.toUpperCase()}</div>
+    </div>
+    <table class="telem-table">
+      <tr><th>n</th><th>W_SVET</th><th>Status</th><th>B_fitted</th><th>Drift vs C_SVET</th><th>Δ vs Classical</th></tr>
+      ${rows}
+    </table>
+    <div style="margin-top:8px;font-size:11px;color:var(--dim)">
+      Elapsed: ${elapsed_ms}ms · Workers: ${maxWorkers()} interleaved stride · Iterations: ${totalIterations.toLocaleString()}
+    </div>`;
+}
+
+// ── Canvas: Dense ─────────────────────────────────────────────
+function drawCanvas(){
+  if(!masterData.length){clearCanvas();return;}
+  const W=canvas.width-80,H=canvas.height-60;
+  const ox=60,oy=canvas.height/2;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Grid
+  ctx.strokeStyle='#131c26';ctx.lineWidth=1;
+  for(let i=1;i<4;i++){
+    const y=oy-(i/4)*(H/2);ctx.beginPath();ctx.moveTo(ox,y);ctx.lineTo(ox+W,y);ctx.stroke();
+    const y2=oy+(i/4)*(H/2);ctx.beginPath();ctx.moveTo(ox,y2);ctx.lineTo(ox+W,y2);ctx.stroke();
+  }
+  // Baseline
+  ctx.strokeStyle='rgba(240,165,0,0.35)';ctx.lineWidth=1.2;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox+W,oy);ctx.stroke();ctx.setLineDash([]);
+  // Bounds
+  const by=H/2*0.9;
+  ctx.strokeStyle='rgba(240,192,64,0.4)';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+  ctx.beginPath();ctx.moveTo(ox,oy-by);ctx.lineTo(ox+W,oy-by);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox,oy+by);ctx.lineTo(ox+W,oy+by);ctx.stroke();
+  ctx.setLineDash([]);
+  // Labels
+  ctx.fillStyle='#3a5068';ctx.font='10px monospace';
+  ctx.fillText(`N [${Math.round(viewMinN).toLocaleString()}→${Math.round(viewMaxN).toLocaleString()}]`,ox,canvas.height-8);
+  ctx.fillText(`+${globalMaxRes.toFixed(0)}`,4,oy-by+4);
+  ctx.fillText(`-${globalMaxRes.toFixed(0)}`,4,oy+by+4);
+  ctx.fillText('0',ox-16,oy+4);
+
+  const compOp=parseFloat(document.getElementById('compOpacity').value);
+  const largeDot=document.getElementById('compLargeDot').checked;
+  document.getElementById('compDotLabel').textContent=largeDot?'Large (2.5px)':'Small (1.2px)';
+  const dotSz=largeDot?2.5:1.2;
+
+  const rN=(viewMaxN-viewMinN)||1;
+  const vis=masterData.filter(d=>d.n>=viewMinN&&d.n<=viewMaxN);
+
+  // Composites
+  ctx.globalAlpha=compOp;
+  ctx.fillStyle='#ff1e6e';
+  vis.forEach(d=>{
+    if(!d.isPrime){
+      const x=ox+((d.n-viewMinN)/rN)*W;
+      const y=oy-(d.res/(globalMaxRes||1))*(H/2);
+      if(y<10||y>canvas.height-10)return;
+      ctx.fillRect(x-dotSz/2,y-dotSz/2,dotSz,dotSz);
+    }
+  });
+  ctx.globalAlpha=1;
+
+  // Primes
+  ctx.fillStyle='#00d4aa';ctx.globalAlpha=0.9;
+  vis.forEach(d=>{
+    if(d.isPrime){
+      const x=ox+((d.n-viewMinN)/rN)*W;
+      const y=oy-(d.res/(globalMaxRes||1))*(H/2);
+      if(y<10||y>canvas.height-10)return;
+      ctx.fillRect(x-1.5,y-1.5,3,3);
+    }
+  });
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#3a5068';ctx.font='11px monospace';
+  ctx.fillText('Δ_W(n) residual field — SVET probe-cost baseline subtracted',ox,18);
+}
+
+// ── Canvas: Sparse ────────────────────────────────────────────
+function drawCanvasSparse(){
+  if(!sparseResults.length)return;
+  const W=canvas.width-80,H=canvas.height-60;
+  const ox=60,oy=canvas.height/2;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const Bs=sparseResults.map(r=>r.Bfitted);
+  const Bmin=Math.min(...Bs)-0.05,Bmax=Math.max(...Bs)+0.05,Brange=Bmax-Bmin||0.1;
+  const ns=sparseResults.map(r=>r.n);
+  const nMin=ns[0],nMax=ns[ns.length-1],nRange=nMax-nMin||1;
+  ctx.strokeStyle='#131c26';ctx.lineWidth=1;
+  for(let i=1;i<4;i++){
+    const y=oy-(i/4)*(H/2);ctx.beginPath();ctx.moveTo(ox,y);ctx.lineTo(ox+W,y);ctx.stroke();
+    const y2=oy+(i/4)*(H/2);ctx.beginPath();ctx.moveTo(ox,y2);ctx.lineTo(ox+W,y2);ctx.stroke();
+  }
+  const targetY=oy-((B_TARGET-Bmin)/Brange-0.5)*(H*0.85);
+  ctx.strokeStyle='rgba(240,165,0,0.5)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(ox,targetY);ctx.lineTo(ox+W,targetY);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='var(--amber)';ctx.font='11px monospace';
+  ctx.fillText(`B_TARGET = ${B_TARGET}`,ox+4,targetY-5);
+  const bandPx=(TOL_B_G/Brange)*(H*0.85);
+  ctx.fillStyle='rgba(0,200,122,0.06)';ctx.fillRect(ox,targetY-bandPx,W,bandPx*2);
+  ctx.strokeStyle='rgba(0,212,170,0.7)';ctx.lineWidth=2;ctx.beginPath();
+  sparseResults.forEach((r,i)=>{
+    const x=ox+((r.n-nMin)/nRange)*W;
+    const y=oy-((r.Bfitted-Bmin)/Brange-0.5)*(H*0.85);
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  sparseResults.forEach(r=>{
+    const x=ox+((r.n-nMin)/nRange)*W;
+    const y=oy-((r.Bfitted-Bmin)/Brange-0.5)*(H*0.85);
+    const dc=Math.abs(r.drift);
+    ctx.fillStyle=dc<=TOL_B_G?'#00c87a':dc<=TOL_B_Y?'#f0c040':'#ff4455';
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#3a5068';ctx.font='9px monospace';
+    const lbl=r.n>=1e9?(r.n/1e9).toFixed(2)+'B':r.n>=1e6?(r.n/1e6).toFixed(1)+'M':r.n>=1e3?(r.n/1e3).toFixed(0)+'k':String(r.n);
+    ctx.fillText(lbl,x-10,y-9);
+  });
+  ctx.fillStyle='#3a5068';ctx.font='11px monospace';
+  ctx.fillText('B_fitted convergence toward C_SVET ≈ 0.155 · sparse sampling mode',ox,18);
+}
+
+function clearCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#1e2a38';ctx.font='12px monospace';
+  ctx.fillText('Execute a run to populate the residual field.',80,canvas.height/2);
+}
+
+// ── Canvas interactions ───────────────────────────────────────
+// Zoom
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(!masterData.length||runMode!=='dense')return;
+  const zf=e.deltaY<0?0.85:1.15;
+  const range=viewMaxN-viewMinN;
+  const mx=e.offsetX,CW=canvas.width-80;
+  const mn=viewMinN+((mx-60)/CW)*range;
+  let nr=range*zf;if(nr<20)nr=20;
+  viewMinN=mn-(mn-viewMinN)*(nr/range);
+  viewMaxN=mn+(viewMaxN-mn)*(nr/range);
+  const lo=masterData[0].n,hi=masterData[masterData.length-1].n;
+  if(viewMinN<lo)viewMinN=lo;if(viewMaxN>hi)viewMaxN=hi;
+  drawCanvas();
+},{passive:false});
+
+function resetZoom(){viewMinN=initMinN;viewMaxN=initMaxN;if(masterData.length)drawCanvas();}
+
+// Pan
+function onCanvasMouseDown(e){
+  if(!masterData.length||runMode!=='dense')return;
+  isDragging=true;
+  dragStartX=e.clientX;
+  dragStartViewMin=viewMinN;
+  dragStartViewMax=viewMaxN;
+  canvas.style.cursor='grabbing';
+}
+
+function onCanvasMouseMove(e){
+  if(isDragging){
+    const CW=canvas.width-80;
+    const range=dragStartViewMax-dragStartViewMin;
+    const dx=e.clientX-dragStartX;
+    const dN=(dx/CW)*range*-1; // negative: drag right = view moves left
+    let newMin=dragStartViewMin+dN;
+    let newMax=dragStartViewMax+dN;
+    const lo=masterData[0].n,hi=masterData[masterData.length-1].n;
+    if(newMin<lo){newMin=lo;newMax=lo+range;}
+    if(newMax>hi){newMax=hi;newMin=hi-range;}
+    viewMinN=newMin;viewMaxN=newMax;
+    drawCanvas();
+    return;
+  }
+  // Tooltip (only when not dragging)
+  if(!masterData.length||runMode!=='dense'){tooltip.style.display='none';return;}
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left-60,CW=canvas.width-80;
+  if(mx<0||mx>CW){tooltip.style.display='none';return;}
+  const hn=Math.round(viewMinN+(mx/CW)*(viewMaxN-viewMinN));
+  const node=masterData.find(d=>d.n>=hn);
+  if(!node){tooltip.style.display='none';return;}
+  drawCanvas();
+  const cx=60+((node.n-viewMinN)/(viewMaxN-viewMinN))*CW;
+  ctx.strokeStyle='rgba(0,212,170,0.22)';ctx.lineWidth=1;ctx.setLineDash([2,3]);
+  ctx.beginPath();ctx.moveTo(cx,10);ctx.lineTo(cx,canvas.height-10);ctx.stroke();ctx.setLineDash([]);
+  tooltip.innerHTML=`
+    <strong>N:</strong> ${node.n.toLocaleString()}<br>
+    <strong>Status:</strong> <span style="color:${node.isPrime?'var(--prime)':'#ff6688'}">${node.isPrime?'PRIME':'Composite'}</span><br>
+    <strong>W_SVET(n):</strong> ${node.wn.toLocaleString()}<br>
+    <strong>Fitted base:</strong> ${node.base?.toFixed(2)||'—'}<br>
+    <strong>Δ_W(n):</strong> ${node.res!=null?(node.res>=0?'+':'')+node.res.toFixed(4):'—'}<br>
+    <strong>Classical ref:</strong> ${node.classBase?.toFixed(2)||'—'}`;
+  tooltip.style.display='block';
+  let px=e.clientX+16,py=e.clientY-40;
+  if(px+220>window.innerWidth)px=e.clientX-235;
+  if(py+130>window.innerHeight)py=e.clientY-135;
+  if(py<8)py=8;
+  tooltip.style.left=px+'px';tooltip.style.top=py+'px';
+}
+
+function onCanvasMouseUp(e){
+  isDragging=false;
+  canvas.style.cursor='crosshair';
+}
+
+function onCanvasMouseLeave(e){
+  isDragging=false;
+  canvas.style.cursor='crosshair';
+  tooltip.style.display='none';
+  if(masterData.length&&runMode==='dense')drawCanvas();
+}
+
+// ── CSV ───────────────────────────────────────────────────────
+function buildCsv(snap,csvEn,minN,maxN){
+  const panel=document.getElementById('csvPanel');
+  if(!csvEn){panel.style.display='none';fullCsvRows=[];return;}
+  const hdr=[
+    `# svet.proofline.${minN}-${maxN}.${fmtTS()}.csv`,
+    `# version: ${snap.version}`,`# timestamp: ${snap.timestamp}`,
+    `# range_min: ${minN}`,`# range_max: ${maxN}`,
+    `# A_fitted: ${snap.A_fitted}`,`# B_fitted: ${snap.B_fitted}`,
+    `# B_target_SVET: ${B_TARGET}`,`# B_classical_ref: ${GAMMA}`,
+    `# status_flag: ${snap.verdicts.aggregate}`,
+    `# performance_mode: ${perfMode}`,`# workers: ${maxWorkers()}`,
+    `n,status,W_SVET,classical_base,harmonic_residual`
+  ];
+  fullCsvRows=[...hdr];
+  masterData.forEach(d=>{
+    fullCsvRows.push(`${d.n},${d.isPrime?'prime':'composite'},${d.wn},${d.classBase.toFixed(4)},${(d.res||0).toFixed(4)}`);
+  });
+  const total=masterData.length;
+  const first=fullCsvRows.slice(0,31),last=fullCsvRows.slice(-20);
+  document.getElementById('csvPrev').textContent=[...first,`… (${total} total rows) …`,...last].join('\n');
+  document.getElementById('csvCount').textContent=`${total.toLocaleString()} data rows`;
+  panel.style.display='';
+}
+
+// ── JSON load ─────────────────────────────────────────────────
+function loadJson(){
+  const raw=document.getElementById('jsonIn').value.trim();
+  const st=document.getElementById('jsonLoadSt');
+  if(!raw){st.textContent='Nothing to load.';return;}
+  try{
+    const snap=JSON.parse(raw);
+    const cfg=snap.run_config||{};
+    if(cfg.range_min!==undefined)document.getElementById('rMin').value=cfg.range_min;
+    if(cfg.range_max!==undefined)document.getElementById('rMax').value=cfg.range_max;
+    if(cfg.csv_export_enabled!==undefined)document.getElementById('csvEn').checked=cfg.csv_export_enabled;
+    if(cfg.diagnostics_visible!==undefined)document.getElementById('diagVis').checked=cfg.diagnostics_visible;
+    if(cfg.performance_mode!==undefined&&cfg.performance_mode!==perfMode)togglePerfMode();
+    if(snap.mode==='sparse'&&cfg.sample_points){
+      document.getElementById('samplePts').value=cfg.sample_points.join(',');
+      setRunMode('sparse');
+    } else if(snap.mode==='dense'){
+      setRunMode('dense');
+    }
+    // Resync mirror after load
+    syncInputJson();
+    st.style.color='var(--green)';st.textContent='✓ State loaded. Adjust controls if needed, then Execute Run.';
+  }catch(ex){
+    st.style.color='var(--red)';st.textContent='✗ Invalid JSON — '+ex.message;
+  }
+}
+
+// ── JSON copy/download ────────────────────────────────────────
+function copyJson(){
+  const t=document.getElementById('jsonOut').textContent;
+  if(t==='No output yet.'||t.startsWith('Computing'))return;
+  navigator.clipboard.writeText(t).then(()=>{
+    const s=document.getElementById('jsonCpSt');
+    s.style.color='var(--green)';s.textContent='✓ Copied';
+    setTimeout(()=>s.textContent='',2000);
+  });
+}
+function dlJson(){
+  if(!lastSnap){alert('No snapshot to download.');return;}
+  const cfg=lastSnap.run_config||{};
+  const rng=lastSnap.mode==='sparse'
+    ?(cfg.sample_points?`${cfg.sample_points[0]}-${cfg.sample_points[cfg.sample_points.length-1]}`:'sparse')
+    :`${cfg.range_min}-${cfg.range_max}`;
+  dl(new Blob([JSON.stringify(lastSnap,null,2)],{type:'application/json'}),
+    `svet.proofline.${rng}.${fmtTS()}.json`);
+}
+function dlCsv(){
+  if(!fullCsvRows.length){alert('No CSV. Enable CSV and re-run.');return;}
+  const cfg=lastSnap?.run_config||{};
+  dl(new Blob([fullCsvRows.join('\n')],{type:'text/csv'}),
+    `svet.proofline.${cfg.range_min}-${cfg.range_max}.${fmtTS()}.csv`);
+}
+function dl(blob,name){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ── Init ──────────────────────────────────────────────────────
+clearCanvas();
+syncInputJson();
+wlog(`SVET Proofline + RTOA v0.2 ready · SAB:${typeof SharedArrayBuffer!=='undefined'} · perfMode:${perfMode}`);
+</script>
+</body>
+</html>

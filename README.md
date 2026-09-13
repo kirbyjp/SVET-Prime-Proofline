@@ -1,10 +1,10 @@
+---
 title: "SVET‑Prime‑Proofline"
-subtitle: 'A mathematical proofline engine for deriving the asymptotic structure of the work function \(W_{\text{SVET}}(n)\)'
-author:
-  - John Kirby
+subtitle: 'A mathematical proofline engine for deriving the asymptotic structure of the work function $W_{\text{SVET}}(n)$'
+author: "John Kirby"
 date: "September 2026"
 abstract: |
-  We present an empirical and analytic characterization of the SVET prime interrogation work functional, \(W_{\text{SVET}}(n)\). By comparing high-resolution residual telemetry against an adjusted harmonic baseline, this study investigates the emergent linear invariant \(C_{\text{SVET}} \approx 0.154431\). Utilizing a multi-core asynchronous execution harness spanning horizons up to 10-trillion (\(10^{13}\)), we demonstrate convergence on the order of \(10^{-10}\), tracking the analytic floor of \(2\gamma - 1\). These findings establish a scale-invariant framework for analyzing divisor-density interference without complex-plane dependency.
+  We present an empirical and analytic characterization of the SVET prime interrogation work functional, $W_{\text{SVET}}(n)$. By comparing high-resolution residual telemetry against an adjusted harmonic baseline, this study investigates the emergent linear invariant $C_{\text{SVET}} \approx 0.154431$. Utilizing a multi-core asynchronous execution harness spanning horizons up to 10-trillion ($10^{13}$), we demonstrate convergence on the order of $10^{-10}$, tracking the analytic floor of $2\gamma - 1$. These findings establish a scale-invariant framework for analyzing divisor-density interference without complex-plane dependency.
 keywords: [Asymptotic Analysis, Divisor Sums, Harmonic Baselines, Residual Fields, SVET, Number Theory, RTOA]
 geometry: margin=1in
 fontsize: 11pt
